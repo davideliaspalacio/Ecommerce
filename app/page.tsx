@@ -1251,22 +1251,42 @@ export default function HomePage() {
                 </div>
 
                 <div>
-                  <p className="text-sm text-gray-600 mb-3">El modelo mide 1.83m y tiene una talla M</p>
+                  <div className="flex items-center justify-between mb-3">
+                    <p className="text-sm text-gray-600">El modelo mide 1.83m y tiene una talla M</p>
+                    {!selectedSize && (
+                      <div className="flex items-center gap-1 text-amber-600 text-sm">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                        </svg>
+                        <span className="font-medium">Selecciona una talla</span>
+                      </div>
+                    )}
+                  </div>
                   <div className="flex gap-2 mb-4">
                     {selectedProduct.sizes.map((size) => (
                       <button
                         key={size}
                         onClick={() => setSelectedSize(size)}
-                        className={`px-6 py-2 border ${
+                        className={`px-6 py-2 border transition-all duration-200 ${
                           selectedSize === size
-                            ? "border-black bg-black text-white"
-                            : "border-gray-300 hover:border-black"
-                        } transition-colors`}
+                            ? "border-[#4a5a3f] bg-[#4a5a3f] text-white scale-105"
+                            : "border-gray-300 hover:border-[#4a5a3f] hover:scale-105"
+                        }`}
                       >
                         {size}
                       </button>
                     ))}
                   </div>
+                  {!selectedSize && (
+                    <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                      <p className="text-amber-800 text-sm flex items-center gap-2">
+                        <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <span>Para agregar este producto al carrito, primero debes seleccionar una talla.</span>
+                      </p>
+                    </div>
+                  )}
                 </div>
 
                 <button
