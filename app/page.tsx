@@ -132,6 +132,9 @@ export default function HomePage() {
   const [isCartOpen, setIsCartOpen] = useState(false)
   const [genderFilter, setGenderFilter] = useState<"TODOS" | "HOMBRE" | "MUJER">("TODOS")
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const [showCartAnimation, setShowCartAnimation] = useState(false)
+  const [isCartClosing, setIsCartClosing] = useState(false)
+  const [isProductModalClosing, setIsProductModalClosing] = useState(false)
 
   const addToCart = () => {
     if (!selectedProduct || !selectedSize) return
@@ -147,6 +150,10 @@ export default function HomePage() {
     } else {
       setCart([...cart, { product: selectedProduct, size: selectedSize, quantity: 1 }])
     }
+
+    // Animación de éxito
+    setShowCartAnimation(true)
+    setTimeout(() => setShowCartAnimation(false), 2000)
 
     setSelectedProduct(null)
     setIsCartOpen(true)
@@ -174,6 +181,22 @@ export default function HomePage() {
       const price = Number.parseInt(item.product.price.replace(/[$.]/g, ""))
       return total + price * item.quantity
     }, 0)
+  }
+
+  const closeCart = () => {
+    setIsCartClosing(true)
+    setTimeout(() => {
+      setIsCartOpen(false)
+      setIsCartClosing(false)
+    }, 400) // Duración de la animación de salida
+  }
+
+  const closeProductModal = () => {
+    setIsProductModalClosing(true)
+    setTimeout(() => {
+      setSelectedProduct(null)
+      setIsProductModalClosing(false)
+    }, 300) // Duración de la animación de salida
   }
 
   return (
@@ -264,7 +287,7 @@ export default function HomePage() {
               </button>
               <button
                 onClick={() => setIsCartOpen(true)}
-                className="text-gray-700 hover:text-black transition-colors relative"
+                className="text-gray-700 hover:text-black transition-all duration-300 hover:scale-110 relative"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path
@@ -275,7 +298,7 @@ export default function HomePage() {
                   />
                 </svg>
                 {cart.length > 0 && (
-                  <span className="absolute -top-2 -right-2 bg-black text-white text-xs w-5 h-5 rounded-full flex items-center justify-center">
+                  <span className={`absolute -top-2 -right-2 bg-black text-white text-xs w-5 h-5 rounded-full flex items-center justify-center transition-all duration-300 ${showCartAnimation ? 'animate-bounce scale-110' : ''}`}>
                     {cart.reduce((total, item) => total + item.quantity, 0)}
                   </span>
                 )}
@@ -632,6 +655,18 @@ export default function HomePage() {
         </div>
       </footer>
 
+      {/* Success Notification */}
+      {showCartAnimation && (
+        <div className="fixed top-20 right-6 z-[60] bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg animate-slide-in-right">
+          <div className="flex items-center gap-2">
+            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+            </svg>
+            <span className="font-medium">¡Producto agregado al carrito!</span>
+          </div>
+        </div>
+      )}
+
       {/* WhatsApp Button */}
       <a
         href="https://wa.me/573005071000"
@@ -646,17 +681,17 @@ export default function HomePage() {
       </a>
 
       {isCartOpen && (
-        <div className="fixed inset-0 z-[100]">
+        <div className={`fixed inset-0 z-[100] ${isCartClosing ? 'animate-fade-out' : 'animate-fade-in'}`}>
           {/* Overlay */}
-          <div className="absolute inset-0 bg-black/50" onClick={() => setIsCartOpen(false)} />
+          <div className={`absolute inset-0 bg-black/50 ${isCartClosing ? 'animate-fade-out' : 'animate-fade-in'}`} onClick={closeCart} />
 
           {/* Panel del carrito */}
-          <div className="absolute right-0 top-0 bottom-0 w-full max-w-md bg-white shadow-2xl flex flex-col">
+          <div className={`absolute right-0 top-0 bottom-0 w-full max-w-md bg-white shadow-2xl flex flex-col ${isCartClosing ? 'animate-slide-out-right' : 'animate-slide-in-right'}`}>
             {/* Header del carrito */}
             <div className="flex items-center justify-between p-6 border-b">
               <h2 className="text-xl font-bold">CARRITO DE COMPRAS</h2>
               <button
-                onClick={() => setIsCartOpen(false)}
+                onClick={closeCart}
                 className="w-8 h-8 rounded-full hover:bg-gray-100 flex items-center justify-center transition-colors"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -683,7 +718,7 @@ export default function HomePage() {
               ) : (
                 <div className="space-y-4">
                   {cart.map((item, index) => (
-                    <div key={`${item.product.id}-${item.size}-${index}`} className="flex gap-4 pb-4 border-b">
+                    <div key={`${item.product.id}-${item.size}-${index}`} className="flex gap-4 pb-4 border-b animate-fade-in-up" style={{ animationDelay: `${index * 0.1}s` }}>
                       <div className="relative w-24 h-24 bg-gray-100 flex-shrink-0">
                         <Image
                           src={item.product.image || "/placeholder.svg"}
@@ -738,11 +773,11 @@ export default function HomePage() {
                 </div>
 
                 <button className="w-full bg-[#4a5a3f] text-white py-3 font-medium hover:bg-[#3d4a34] transition-colors">
-                  FINALIZAR COMPRA
+                  FINALIZAR COMPRA POR WHATSAPP
                 </button>
 
                 <button
-                  onClick={() => setIsCartOpen(false)}
+                  onClick={closeCart}
                   className="w-full border border-gray-300 py-3 font-medium hover:border-black transition-colors"
                 >
                   SEGUIR COMPRANDO
@@ -754,13 +789,13 @@ export default function HomePage() {
       )}
 
       {selectedProduct && (
-        <div className="fixed inset-0 z-[100] bg-black/50 flex items-center justify-center p-4">
-          <div className="bg-white w-full max-w-6xl max-h-[90vh] overflow-y-auto relative">
+        <div className={`fixed inset-0 z-[100] bg-black/50 flex items-center justify-center p-4 ${isProductModalClosing ? 'animate-fade-out' : 'animate-fade-in'}`} onClick={closeProductModal}>
+          <div className={`bg-white w-full max-w-6xl max-h-[90vh] overflow-y-auto relative ${isProductModalClosing ? 'animate-scale-out' : 'animate-scale-in'}`} onClick={(e) => e.stopPropagation()}>
             {/* Banner Premium */}
             <div className="bg-[#4a5a3f] text-white px-6 py-3 flex items-center justify-between">
               <p className="text-sm">TELA PREMIUM | Una vez la tocas, notarás la diferencia</p>
               <button
-                onClick={() => setSelectedProduct(null)}
+                onClick={closeProductModal}
                 className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center hover:bg-white/30 transition-colors"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -834,20 +869,17 @@ export default function HomePage() {
                         {size}
                       </button>
                     ))}
-                    <button className="px-4 py-2 text-sm underline hover:no-underline">GUÍA DE MEDIDAS</button>
                   </div>
                 </div>
-
-                <button className="w-full px-6 py-2 border border-gray-300 text-sm hover:border-black transition-colors">
-                  VER DISPONIBILIDAD EN TIENDA
-                </button>
 
                 <button
                   onClick={addToCart}
                   disabled={!selectedSize}
-                  className={`w-full py-3 text-white font-medium ${
-                    selectedSize ? "bg-[#4a5a3f] hover:bg-[#3d4a34]" : "bg-gray-300 cursor-not-allowed"
-                  } transition-colors`}
+                  className={`w-full py-3 text-white font-medium transition-all duration-300 ${
+                    selectedSize 
+                      ? "bg-[#4a5a3f] hover:bg-[#3d4a34] hover:scale-105 active:scale-95" 
+                      : "bg-gray-300 cursor-not-allowed"
+                  }`}
                 >
                   {selectedSize ? "AGREGAR AL CARRITO" : "SELECCIONA UNA TALLA"}
                 </button>
