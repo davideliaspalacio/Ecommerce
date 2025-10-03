@@ -28,8 +28,8 @@ const products: Product[] = [
     id: 1,
     name: "CAMISETA OVERSIZE NEGRO ILUSTRACIÓN",
     price: "$129.000",
-    image: "/black-graphic-t-shirt-with-angel-wings-print-stree.jpg",
-    imageBack: "/back-view-person-wearing-white-t-shirt-with-artist.jpg",
+    image: "https://b2cmattelsa.vtexassets.com/arquivos/ids/682164-500-748?v=638939242540700000&width=500&height=748&aspect=true",
+    imageBack: "https://b2cmattelsa.vtexassets.com/arquivos/ids/682165-500-748?v=638939242540830000&width=500&height=748&aspect=true",
     category: "CAMISETA",
     gender: "HOMBRE",
     description:
@@ -41,10 +41,10 @@ const products: Product[] = [
     id: 2,
     name: "GORRA BASEBALL VERDE Y BLANCO",
     price: "$19.000",
-    image: "/green-and-white-baseball-cap-streetwear-fashion.jpg",
-    imageBack: "/green-and-white-baseball-cap-streetwear-fashion.jpg",
-    category: "GORRA",
-    gender: "HOMBRE",
+    image: "https://b2cmattelsa.vtexassets.com/arquivos/ids/683474-500-748?v=638939241393270000&width=500&height=748&aspect=true",
+    imageBack: "https://b2cmattelsa.vtexassets.com/arquivos/ids/683475-500-748?v=638939241393400000&width=500&height=748&aspect=true",
+    category: "CAMISETA",
+    gender: "MUJER",
     description: "Gorra baseball de alta calidad con diseño streetwear. Ajustable y cómoda para uso diario.",
     specifications: ["Diseño Streetwear", "Ajustable", "100% Algodón", "Bordado de calidad"],
     sizes: ["ÚNICA"],
@@ -53,8 +53,8 @@ const products: Product[] = [
     id: 3,
     name: "CAMISETA OVERSIZE GRIS MINIMAL",
     price: "$32.000",
-    image: "/oversized-gray-t-shirt-minimal-streetwear.jpg",
-    imageBack: "/oversized-gray-t-shirt-minimal-streetwear.jpg",
+    image: "https://b2cmattelsa.vtexassets.com/arquivos/ids/683326-500-748?v=638939052809100000&width=500&height=748&aspect=true",
+    imageBack: "https://b2cmattelsa.vtexassets.com/arquivos/ids/683327-500-748?v=638939052809270000&width=500&height=748&aspect=true",
     category: "CAMISETA",
     gender: "HOMBRE",
     description: "Camiseta oversize con diseño minimalista. Perfecta para un look urbano y relajado.",
@@ -65,8 +65,8 @@ const products: Product[] = [
     id: 4,
     name: "SUDADERA NEGRA PARADISE PRINT",
     price: "$45.000",
-    image: "/black-hoodie-with-turquoise-paradise-print-streetw.jpg",
-    imageBack: "/black-hoodie-with-turquoise-paradise-print-streetw.jpg",
+    image: "https://b2cmattelsa.vtexassets.com/arquivos/ids/683062-500-748?v=638939241746500000&width=500&height=748&aspect=true",
+    imageBack: "https://b2cmattelsa.vtexassets.com/arquivos/ids/683063-500-748?v=638939241746530000&width=500&height=748&aspect=true",
     category: "SUDADERA",
     gender: "HOMBRE",
     description: "Sudadera con capucha y estampado Paradise. Confeccionada en algodón premium de alto gramaje.",
@@ -77,8 +77,8 @@ const products: Product[] = [
     id: 5,
     name: "TOP CROP BLANCO BÁSICO",
     price: "$59.000",
-    image: "/placeholder.jpg",
-    imageBack: "/placeholder.jpg",
+    image: "https://b2cmattelsa.vtexassets.com/arquivos/ids/681959-500-748?v=638939243678000000&width=500&height=748&aspect=true",
+    imageBack: "https://b2cmattelsa.vtexassets.com/arquivos/ids/681960-500-748?v=638939243678300000&width=500&height=748&aspect=true",
     category: "TOP",
     gender: "MUJER",
     description: "Top corto de algodón suave, ideal para combinar con jean o jogger.",
@@ -89,8 +89,8 @@ const products: Product[] = [
     id: 6,
     name: "JEAN MOM AZUL CLÁSICO",
     price: "$159.000",
-    image: "/placeholder.jpg",
-    imageBack: "/placeholder.jpg",
+    image: "https://b2cmattelsa.vtexassets.com/arquivos/ids/682722-500-748?v=638938970103470000&width=500&height=748&aspect=true",
+    imageBack: "https://b2cmattelsa.vtexassets.com/arquivos/ids/682723-500-748?v=638938970103800000&width=500&height=748&aspect=true",
     category: "JEAN",
     gender: "MUJER",
     description: "Jean tiro alto estilo mom con lavado azul clásico.",
@@ -101,7 +101,7 @@ const products: Product[] = [
     id: 7,
     name: "CAMISETA BABY TEE NEGRA",
     price: "$69.000",
-    image: "/placeholder.jpg",
+    image: "https://b2cmattelsa.vtexassets.com/arquivos/ids/684035-1200-auto?v=638941828602070000&width=1200&height=auto&aspect=true",
     imageBack: "/placeholder.jpg",
     category: "CAMISETA",
     gender: "MUJER",
@@ -113,8 +113,8 @@ const products: Product[] = [
     id: 8,
     name: "JOGGER CARGO OLIVA",
     price: "$139.000",
-    image: "/placeholder.jpg",
-    imageBack: "/placeholder.jpg",
+    image: "https://b2cmattelsa.vtexassets.com/arquivos/ids/684067-500-748?v=638941832221070000&width=500&height=748&aspect=true",
+    imageBack: "https://b2cmattelsa.vtexassets.com/arquivos/ids/684068-500-748?v=638941832221070000&width=500&height=748&aspect=true",
     category: "JOGGER",
     gender: "HOMBRE",
     description: "Jogger cargo en sarga oliva con múltiples bolsillos y ajuste en bota.",
@@ -412,27 +412,52 @@ export default function HomePage() {
             {products
               .filter((p) => (genderFilter === "TODOS" ? true : p.gender === genderFilter))
               .map((product) => (
-              <div
+              <article
                 key={product.id}
-                className="group cursor-pointer"
+                className="pointer pt3 pb4 flex flex-column h-100 group cursor-pointer"
                 onClick={() => {
                   setSelectedProduct(product)
                   setSelectedSize("")
                   setCurrentImageIndex(0)
                 }}
               >
-                <div className="relative aspect-square bg-white mb-4 overflow-hidden">
-                  <Image
-                    src={product.image || "/placeholder.svg"}
-                    alt={product.name}
-                    fill
-                    className="object-cover group-hover:scale-105 transition-transform duration-300"
-                  />
-                  <span className="absolute top-4 left-4 bg-white px-3 py-1 text-xs font-medium">NEW IN</span>
+                {/* Image Container */}
+                <div className="relative mb-4">
+                  <div className="dib relative hoverEffect">
+                    <Image
+                      src={product.image || "/placeholder.svg"}
+                      alt={product.name}
+                      width={500}
+                      height={748}
+                      className="w-100 h-100 object-contain transition-opacity duration-300 group-hover:opacity-0"
+                      style={{ maxHeight: 'unset', maxWidth: '500px' }}
+                    />
+                    <Image
+                      src={product.imageBack || product.image || "/placeholder.svg"}
+                      alt={product.name}
+                      width={500}
+                      height={748}
+                      className="w-100 h-100 absolute top-0 left-0 z-10 object-contain opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                      style={{ maxHeight: 'unset', maxWidth: '500px' }}
+                    />
+                  </div>
                 </div>
-                <h4 className="font-medium mb-1">{product.category}</h4>
-                <p className="text-gray-600">{product.price}</p>
-              </div>
+
+                {/* Product Info */}
+                <div className="flex flex-column justify-end items-center">
+                  <span className="text-sm font-medium text-gray-700 mb-2">{product.category}</span>
+                  
+                  <div className="flex flex-column justify-start">
+                    <div className="pt1 pb3">
+                      <span className="text-lg font-medium text-gray-900">
+                        <span className="text-sm">$</span>
+                        <span className="text-sm">&nbsp;</span>
+                        <span className="text-lg">{product.price.replace('$', '').replace('.', '')}</span>
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </article>
             ))}
           </div>
         </div>
