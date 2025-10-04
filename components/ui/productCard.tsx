@@ -1,10 +1,11 @@
 import Image from "next/image";
 import ProductModal from "./productModal";
-import { products } from "../data/products";
 import { useUIStore } from "@/store/uiStore";
+import { useProductsContext } from "@/contexts/ProductsContext";
 
 export default function ProductsCards() {
   const { genderFilter, setGenderFilter, selectedProduct, setSelectedProduct, setSelectedSize, setCurrentImageIndex } = useUIStore();
+  const { products, loading, error, fetchProducts, fetchProductsByGender } = useProductsContext();
   return (
     <>
       <section id="new-in" className="py-16 bg-gray-50">
@@ -13,7 +14,10 @@ export default function ProductsCards() {
             <h3 className="text-3xl font-bold">NEW IN</h3>
             <div className="flex gap-2">
               <button
-                onClick={() => setGenderFilter("TODOS")}
+                onClick={() => {
+                  setGenderFilter("TODOS");
+                  fetchProducts();
+                }}
                 className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
                   genderFilter === "TODOS"
                     ? "bg-black text-white"
@@ -23,7 +27,10 @@ export default function ProductsCards() {
                 TODOS
               </button>
               <button
-                onClick={() => setGenderFilter("HOMBRE")}
+                onClick={() => {
+                  setGenderFilter("HOMBRE");
+                  fetchProductsByGender("HOMBRE");
+                }}
                 className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
                   genderFilter === "HOMBRE"
                     ? "bg-black text-white"
@@ -33,7 +40,10 @@ export default function ProductsCards() {
                 HOMBRE
               </button>
               <button
-                onClick={() => setGenderFilter("MUJER")}
+                onClick={() => {
+                  setGenderFilter("MUJER");
+                  fetchProductsByGender("MUJER");
+                }}
                 className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
                   genderFilter === "MUJER"
                     ? "bg-black text-white"
@@ -44,12 +54,21 @@ export default function ProductsCards() {
               </button>
             </div>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {products
-              .filter((p) =>
-                genderFilter === "TODOS" ? true : p.gender === genderFilter
-              )
-              .map((product) => (
+          {loading ? (
+            <div className="flex justify-center items-center py-16">
+              <div className="w-8 h-8 border-4 border-gray-300 border-t-black rounded-full animate-spin"></div>
+            </div>
+          ) : error ? (
+            <div className="text-center py-16">
+              <p className="text-red-600">Error al cargar los productos: {error}</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {products
+                .filter((p) =>
+                  genderFilter === "TODOS" ? true : p.gender === genderFilter
+                )
+                .map((product) => (
                 <article
                   key={product.id}
                   className="pointer pt3 pb4 flex flex-column h-100 group cursor-pointer"
@@ -69,7 +88,7 @@ export default function ProductsCards() {
                       />
                       <Image
                         src={
-                          product.imageBack ||
+                          product.image_back ||
                           product.image ||
                           "/placeholder.svg"
                         }
@@ -94,7 +113,7 @@ export default function ProductsCards() {
                           <span className="text-sm">$</span>
                           <span className="text-sm">&nbsp;</span>
                           <span className="text-lg">
-                            {product.price.replace("$", "").replace(".", "")}
+                            {product.price.toLocaleString()}
                           </span>
                         </span>
                       </div>
@@ -102,7 +121,8 @@ export default function ProductsCards() {
                   </div>
                 </article>
               ))}
-          </div>
+            </div>
+          )}
         </div>
       </section>
        {selectedProduct && (

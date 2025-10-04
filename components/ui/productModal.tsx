@@ -28,6 +28,7 @@ export default function ProductModal() {
           setIsProductModalClosing(false)
         }, 300) 
       }
+      console.log(selectedProduct.image_back, "image back")
   if (!selectedProduct) return null
 
   return (
@@ -51,7 +52,7 @@ export default function ProductModal() {
         <div className="space-y-4">
           <div className="relative aspect-square bg-gray-100">
             <Image
-              src={currentImageIndex === 0 ? selectedProduct.image : selectedProduct.imageBack}
+              src={currentImageIndex === 0 ? selectedProduct.image : selectedProduct.image_back}
               alt={selectedProduct.name}
               fill
               className="object-cover"
@@ -78,7 +79,7 @@ export default function ProductModal() {
               }`}
             >
               <Image
-                src={selectedProduct.imageBack || "/placeholder.svg"}
+                src={selectedProduct.image_back || "/placeholder.svg"}
                 alt="Espalda"
                 fill
                 className="object-cover"
@@ -90,7 +91,6 @@ export default function ProductModal() {
         {/* Información del producto */}
         <div className="space-y-6">
           <div>
-            <p className="text-sm text-gray-500 mb-2">Item: {selectedProduct.id}9060</p>
             <h2 className="text-2xl font-bold mb-2">{selectedProduct.name}</h2>
             <p className="text-2xl font-medium">{selectedProduct.price}</p>
             {!selectedSize && (
@@ -106,7 +106,7 @@ export default function ProductModal() {
           <div>
             <div className="flex items-center justify-between mb-3">
                 
-              <p className="text-sm text-gray-600">El modelo mide 1.83m y tiene una talla M</p>
+              <p className="text-sm text-gray-600">{selectedProduct.description}</p>
             </div>
             <div className="flex gap-2 mb-4">
               {selectedProduct.sizes.map((size: string) => (
@@ -166,10 +166,7 @@ export default function ProductModal() {
 
             {showAbout && (
               <div className="pt-4 space-y-4 text-sm text-gray-700">
-                <p>{selectedProduct.description}</p>
-
                 <div>
-                  <p className="font-medium mb-2">ESPECIFICACIONES</p>
                   <ul className="space-y-1">
                     {selectedProduct.specifications.map((spec: string, index: number) => (
                       <li key={index}>• {spec}</li>
@@ -178,9 +175,8 @@ export default function ProductModal() {
                 </div>
 
                 <div>
-                  <p className="font-medium mb-2">COMPOSICIÓN Y CUIDADOS</p>
-                  <p className="text-gray-600">Tela principal/Main fabric</p>
-                  <p>• 100% algodón/cotton</p>
+                  <p className="font-medium mb-2">Especificaciones del producto</p>
+                    <p className="text-gray-600">{selectedProduct.specifications.join(", ")}</p>
                 </div>
               </div>
             )}

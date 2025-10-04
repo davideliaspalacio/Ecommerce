@@ -24,7 +24,7 @@ export default function ShoppingCart() {
     let message = `¡Hola! Me interesa comprar los siguientes productos:\n\n`
     
     cart.forEach((item, index) => {
-      const price = Number.parseInt(item.product.price.replace(/[$.]/g, ""))
+      const price = item.product.price;
       message += `${index + 1}. ${item.product.name}\n`
       message += `   Talla: ${item.size}\n`
       message += `   Cantidad: ${item.quantity}\n`

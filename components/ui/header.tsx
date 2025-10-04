@@ -2,8 +2,11 @@
 
 import Link from "next/link";
 import AuthModal from "./authModal";
+import ConfirmModal from "./ConfirmModal";
 import { useCartStore } from "@/store/cartStore";
 import { useUIStore } from "@/store/uiStore";
+import { useAuthContext } from "@/contexts/AuthContext";
+import { useState } from "react";
 
 export default function Header() {
   const { cart, isCartOpen, openCart, getItemCount, showCartAnimation } = useCartStore();
@@ -14,6 +17,17 @@ export default function Header() {
     openAuthModal, 
     closeAuthModal 
   } = useUIStore();
+  const { user, profile, signOut, loading } = useAuthContext();
+  const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
+
+  const handleSignOutClick = () => {
+    setIsConfirmModalOpen(true);
+  };
+
+  const handleConfirmSignOut = async () => {
+    await signOut();
+    setIsConfirmModalOpen(false);
+  };
   return (
     <>
       <header className="fixed top-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-sm border-b border-gray-200">
@@ -63,24 +77,58 @@ export default function Header() {
                   />
                 </svg>
               </button>
-              <button
-                onClick={openAuthModal}
-                className="hidden sm:block text-gray-700 hover:text-black transition-colors cursor-pointer"
-              >
-                <svg
-                  className="w-5 h-5"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
+              {loading ? (
+                <div className="hidden sm:block w-5 h-5 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin"></div>
+              ) : user ? (
+                <div className="hidden sm:flex items-center gap-2">
+                  <div className="flex items-center gap-2 text-sm">
+                    <div className="w-8 h-8 bg-[#4a5a3f] rounded-full flex items-center justify-center text-white font-medium">
+                      {profile?.full_name?.charAt(0) || user.email?.charAt(0) || 'U'}
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-gray-700 font-medium">
+                        {profile?.full_name || user.email}
+                      </span>
+                      {profile?.role === 'admin' && (
+                        <Link 
+                          href="/admin" 
+                          className="text-xs text-[#4a5a3f] hover:underline"
+                        >
+                          Panel Admin
+                        </Link>
+                      )}
+                    </div>
+                  </div>
+                  <button
+                    onClick={handleSignOutClick}
+                    className="text-gray-500 hover:text-red-600 transition-colors text-sm"
+                    title="Cerrar sesión"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                    </svg>
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={openAuthModal}
+                  className="hidden sm:block text-gray-700 hover:text-black transition-colors cursor-pointer"
                 >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                  />
-                </svg>
-              </button>
+                  <svg
+                    className="w-5 h-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                    />
+                  </svg>
+                </button>
+              )}
               <button
                 onClick={openCart}
                 className="text-gray-700 hover:text-black transition-all duration-300 hover:scale-110 relative cursor-pointer"
@@ -129,27 +177,62 @@ export default function Header() {
                       />
                     </svg>
                   </button>
-                  <button
-                    onClick={() => {
-                      openAuthModal();
-                      toggleMobileMenu();
-                    }}
-                    className="text-gray-700 hover:text-black transition-colors"
-                  >
-                    <svg
-                      className="w-5 h-5"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
+                  {loading ? (
+                    <div className="w-5 h-5 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin"></div>
+                  ) : user ? (
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 bg-[#4a5a3f] rounded-full flex items-center justify-center text-white font-medium text-sm">
+                        {profile?.full_name?.charAt(0) || user.email?.charAt(0) || 'U'}
+                      </div>
+                      <div className="text-sm">
+                        <div className="font-medium text-gray-900">
+                          {profile?.full_name || user.email}
+                        </div>
+                        <div className="flex flex-col gap-1">
+                          {profile?.role === 'admin' && (
+                            <Link 
+                              href="/admin" 
+                              className="text-xs text-[#4a5a3f] hover:underline"
+                              onClick={() => toggleMobileMenu()}
+                            >
+                              Panel Admin
+                            </Link>
+                          )}
+                          <button
+                            onClick={() => {
+                              handleSignOutClick();
+                              toggleMobileMenu();
+                            }}
+                            className="text-red-600 hover:text-red-800 text-xs"
+                          >
+                            Cerrar sesión
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => {
+                        openAuthModal();
+                        toggleMobileMenu();
+                      }}
+                      className="text-gray-700 hover:text-black transition-colors"
                     >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                      />
-                    </svg>
-                  </button>
+                      <svg
+                        className="w-5 h-5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                        />
+                      </svg>
+                    </button>
+                  )}
                   <button className="text-gray-700 hover:text-black transition-colors">
                     <svg
                       className="w-5 h-5"
@@ -174,6 +257,16 @@ export default function Header() {
       <AuthModal
         isOpen={isAuthModalOpen}
         onClose={closeAuthModal}
+      />
+      <ConfirmModal
+        isOpen={isConfirmModalOpen}
+        onClose={() => setIsConfirmModalOpen(false)}
+        onConfirm={handleConfirmSignOut}
+        title="Cerrar sesión"
+        message="¿Estás seguro de que quieres cerrar sesión? Tendrás que volver a iniciar sesión para acceder a tu cuenta."
+        confirmText="Sí, cerrar sesión"
+        cancelText="Cancelar"
+        isDestructive={true}
       />
     </>
   );

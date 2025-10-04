@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { CartItemType } from '@/components/types/CartItem';
+import { ProductType } from '@/components/types/Product';
 
 interface CartStore {
   // Estado
@@ -9,9 +10,9 @@ interface CartStore {
   showCartAnimation: boolean;
 
   // Acciones del carrito
-  addToCart: (product: any, size: string) => void;
-  removeFromCart: (productId: number, size: string) => void;
-  updateQuantity: (productId: number, size: string, quantity: number) => void;
+  addToCart: (product: ProductType, size: string) => void;
+  removeFromCart: (productId: string, size: string) => void;
+  updateQuantity: (productId: string, size: string, quantity: number) => void;
   clearCart: () => void;
 
   // Acciones de UI
@@ -22,7 +23,7 @@ interface CartStore {
   // Utilidades
   getTotal: () => number;
   getItemCount: () => number;
-  isInCart: (productId: number, size: string) => boolean;
+  isInCart: (productId: string, size: string) => boolean;
 }
 
 export const useCartStore = create<CartStore>()(
@@ -112,8 +113,7 @@ export const useCartStore = create<CartStore>()(
       // Calcular total
       getTotal: () => {
         return get().cart.reduce((total, item) => {
-          const price = Number.parseInt(item.product.price.replace(/[$.]/g, ""));
-          return total + price * item.quantity;
+          return total + (item.product.price * item.quantity);
         }, 0);
       },
 

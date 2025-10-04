@@ -3,6 +3,9 @@ import { GeistSans } from 'geist/font/sans'
 import { GeistMono } from 'geist/font/mono'
 import { Analytics } from '@vercel/analytics/next'
 import { SpeedInsights } from "@vercel/speed-insights/next"
+import { AuthProvider } from '@/contexts/AuthContext'
+import { ProductsProvider } from '@/contexts/ProductsContext'
+
 
 import './globals.css'
 
@@ -19,9 +22,13 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`font-sans ${GeistSans.variable} ${GeistMono.variable}`}>
-        {children}
-        <Analytics />
-        <SpeedInsights />
+        <AuthProvider>
+          <ProductsProvider>
+            {children}
+            <Analytics />
+            <SpeedInsights />
+          </ProductsProvider>
+        </AuthProvider>
       </body>
     </html>
   )

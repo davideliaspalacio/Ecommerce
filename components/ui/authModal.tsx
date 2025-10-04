@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { useAuthContext } from "@/contexts/AuthContext"
 
 interface AuthModalProps {
   isOpen: boolean
@@ -8,6 +9,7 @@ interface AuthModalProps {
 }
 
 export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
+  const { signIn, signUp, error, clearError } = useAuthContext()
   const [authMode, setAuthMode] = useState<'login' | 'register'>('login')
   const [authForm, setAuthForm] = useState({
     name: '',
@@ -16,34 +18,55 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
     confirmPassword: ''
   })
   const [isClosing, setIsClosing] = useState(false)
+  const [loading, setLoading] = useState(false)
 
   const closeAuthModal = () => {
     setIsClosing(true)
+    clearError()
     setTimeout(() => {
       onClose()
       setIsClosing(false)
       setAuthForm({ name: '', email: '', password: '', confirmPassword: '' })
+      setLoading(false)
     }, 300)
   }
 
-  const handleAuthSubmit = (e: React.FormEvent) => {
+  const handleAuthSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (authMode === 'login') {
-      console.log('Login:', { email: authForm.email, password: authForm.password })
-      closeAuthModal()
-    } else {
-      if (authForm.password !== authForm.confirmPassword) {
-        alert('Las contraseñas no coinciden')
-        return
+    setLoading(true)
+    clearError()
+
+    try {
+      if (authMode === 'login') {
+        const { error } = await signIn(authForm.email, authForm.password)
+        if (error) {
+          console.error('Login error:', error)
+          return
+        }
+        closeAuthModal()
+      } else {
+        if (authForm.password !== authForm.confirmPassword) {
+          setLoading(false)
+          return
+        }
+        const { error } = await signUp(authForm.email, authForm.password, authForm.name)
+        if (error) {
+          console.error('Signup error:', error)
+          return
+        }
+        closeAuthModal()
       }
-      console.log('Register:', authForm)
-      closeAuthModal()
+    } catch (err) {
+      console.error('Unexpected error:', err)
+    } finally {
+      setLoading(false)
     }
   }
 
   const switchAuthMode = () => {
     setAuthMode(authMode === 'login' ? 'register' : 'login')
     setAuthForm({ name: '', email: '', password: '', confirmPassword: '' })
+    clearError()
   }
 
   if (!isOpen) return null
@@ -66,8 +89,12 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
           </button>
         </div>
 
-        {/* Form */}
         <form onSubmit={handleAuthSubmit} className="p-6 space-y-4">
+          {error && (
+            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-1xl text-sm">
+              {error}
+            </div>
+          )}
           {authMode === 'register' && (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -130,9 +157,17 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
 
           <button
             type="submit"
-            className="w-full bg-[#4a5a3f] text-white py-3 font-medium rounded-1xl hover:bg-[#3d4a34] transition-colors"
+            disabled={loading}
+            className="w-full bg-[#4a5a3f] text-white py-3 font-medium rounded-1xl hover:bg-[#3d4a34] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {authMode === 'login' ? 'INICIAR SESIÓN' : 'CREAR CUENTA'}
+            {loading ? (
+              <div className="flex items-center justify-center">
+                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                {authMode === 'login' ? 'INICIANDO SESIÓN...' : 'CREANDO CUENTA...'}
+              </div>
+            ) : (
+              authMode === 'login' ? 'INICIAR SESIÓN' : 'CREAR CUENTA'
+            )}
           </button>
 
           {/* Switch Mode */}
