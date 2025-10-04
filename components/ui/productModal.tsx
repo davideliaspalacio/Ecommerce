@@ -1,29 +1,19 @@
 import { useState } from "react"
 import Image from "next/image"
-import { ProductType } from "../types/Product"
-import { CartItemType } from "../types/CartItem"
+import { useUIStore } from "@/store/uiStore"
+import { useCartStore } from "@/store/cartStore"
 
-
-export default function ProductModal( {selectedProduct, selectedSize, currentImageIndex, setSelectedProduct, setSelectedSize, setCurrentImageIndex, cart, setCart, setIsCartOpen}: {selectedProduct: ProductType | null, selectedSize: string, currentImageIndex: number, setSelectedProduct: (product: ProductType | null) => void, setSelectedSize: (size: string) => void, setCurrentImageIndex: (index: number) => void, cart: CartItemType[], setCart: (cart: CartItemType[]) => void, setIsCartOpen: (open: boolean) => void} ) {
+export default function ProductModal() {
+    const { selectedProduct, selectedSize, currentImageIndex, setSelectedProduct, setSelectedSize, setCurrentImageIndex } = useUIStore()
+    const { addToCart, openCart } = useCartStore()
     const [isProductModalClosing, setIsProductModalClosing] = useState(false)
     const [showAbout, setShowAbout] = useState(false)
-    const addToCart = () => {
-        if (!selectedProduct || !selectedSize) return
-
-        const existingItemIndex = cart.findIndex(
-          (item) => item.product.id === selectedProduct.id && item.size === selectedSize,
-        )
     
-        if (existingItemIndex > -1) {
-          const newCart = [...cart]
-          newCart[existingItemIndex].quantity += 1
-          setCart(newCart)
-        } else {
-          setCart([...cart, { product: selectedProduct, size: selectedSize, quantity: 1 }])
-        }
-        
+    const handleAddToCart = () => {
+        if (!selectedProduct || !selectedSize) return
+        addToCart(selectedProduct, selectedSize)
         setSelectedProduct(null)
-        setIsCartOpen(true)
+        openCart()
     }
     const closeProductModal = () => {
         setIsProductModalClosing(true)
@@ -112,7 +102,7 @@ export default function ProductModal( {selectedProduct, selectedSize, currentIma
               )}
             </div>
             <div className="flex gap-2 mb-4">
-              {selectedProduct.sizes.map((size) => (
+              {selectedProduct.sizes.map((size: string) => (
                 <button
                   key={size}
                   onClick={() => setSelectedSize(size)}
@@ -139,7 +129,7 @@ export default function ProductModal( {selectedProduct, selectedSize, currentIma
           </div>
 
           <button
-            onClick={addToCart}
+            onClick={handleAddToCart}
             disabled={!selectedSize}
             className={`w-full py-3 text-white font-medium transition-all duration-300 ${
               selectedSize 
@@ -174,7 +164,7 @@ export default function ProductModal( {selectedProduct, selectedSize, currentIma
                 <div>
                   <p className="font-medium mb-2">ESPECIFICACIONES</p>
                   <ul className="space-y-1">
-                    {selectedProduct.specifications.map((spec, index) => (
+                    {selectedProduct.specifications.map((spec: string, index: number) => (
                       <li key={index}>• {spec}</li>
                     ))}
                   </ul>

@@ -1,35 +1,21 @@
 import { useState } from "react";
-import { CartItemType } from "../types/CartItem";
 import Image from "next/image";
 import PurchaseVerification from "./purchaseVerification";
+import { useCartStore } from "@/store/cartStore";
+import { useUIStore } from "@/store/uiStore";
 
-export default function ShoppingCart({ cart, setCart, isCartOpen, setIsCartOpen }: { cart: CartItemType[], setCart: (cart: CartItemType[]) => void, isCartOpen: boolean, setIsCartOpen: (open: boolean) => void }) {
+export default function ShoppingCart() {
+  const { cart, isCartOpen, closeCart, updateQuantity, removeFromCart, getTotal } = useCartStore();
+  const { isPurchaseModalOpen, openPurchaseModal, closePurchaseModal } = useUIStore();
   const [isCartClosing, setIsCartClosing] = useState(false);
-  const [isPurchaseModalOpen, setIsPurchaseModalOpen] = useState(false);
-  const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
-  const closeCart = () => {
+  const handleCloseCart = () => {
     setIsCartClosing(true);
     setTimeout(() => {
-      setIsCartOpen(false);
+      closeCart();
       setIsCartClosing(false);
     }, 400);
   };
 
-  const updateQuantity = (productId: number, size: string, newQuantity: number) => {
-    if (newQuantity < 1) {
-      removeFromCart(productId, size)
-      return
-    }
-
-    setCart(
-      cart.map((item) =>
-        item.product.id === productId && item.size === size ? { ...item, quantity: newQuantity } : item,
-      ),
-    )
-  }
-  const removeFromCart = (productId: number, size: string) => {
-    setCart(cart.filter((item) => !(item.product.id === productId && item.size === size)))
-  }
 
   const generateWhatsAppMessage = () => {
     if (cart.length === 0) return ''
@@ -57,16 +43,10 @@ export default function ShoppingCart({ cart, setCart, isCartOpen, setIsCartOpen 
     window.open(whatsappUrl, '_blank')
     
     setTimeout(() => {
-      setIsPurchaseModalOpen(true)
+      openPurchaseModal()
     }, 1000)
   }
 
-  const getTotal = () => {
-    return cart.reduce((total, item) => {
-      const price = Number.parseInt(item.product.price.replace(/[$.]/g, ""))
-      return total + price * item.quantity
-    }, 0)
-  }
 
 
   if (!isCartOpen) return null;
@@ -83,7 +63,7 @@ export default function ShoppingCart({ cart, setCart, isCartOpen, setIsCartOpen 
           className={`absolute inset-0 bg-black/50 ${
             isCartClosing ? "animate-fade-out" : "animate-fade-in"
           }`}
-          onClick={closeCart}
+          onClick={handleCloseCart}
         />
 
         {/* Panel del carrito */}
@@ -96,7 +76,7 @@ export default function ShoppingCart({ cart, setCart, isCartOpen, setIsCartOpen 
           <div className="flex items-center justify-between p-6 border-b">
             <h2 className="text-xl font-bold">CARRITO DE COMPRAS</h2>
             <button
-              onClick={closeCart}
+              onClick={handleCloseCart}
               className="w-8 h-8 rounded-full hover:bg-gray-100 flex items-center justify-center transition-colors"
             >
               <svg
@@ -235,7 +215,7 @@ export default function ShoppingCart({ cart, setCart, isCartOpen, setIsCartOpen 
               </button>
 
               <button
-                onClick={closeCart}
+                onClick={handleCloseCart}
                 className="w-full border border-gray-300 py-3 font-medium hover:border-black transition-colors"
               >
                 SEGUIR COMPRANDO
@@ -246,8 +226,8 @@ export default function ShoppingCart({ cart, setCart, isCartOpen, setIsCartOpen 
       </div>
       <PurchaseVerification
         isOpen={isPurchaseModalOpen}
-        onClose={() => setIsPurchaseModalOpen(false)}
-        onPurchaseComplete={() => setCart([])}
+        onClose={closePurchaseModal}
+        onPurchaseComplete={() => useCartStore.getState().clearCart()}
       />
     </>
   );

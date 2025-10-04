@@ -1,16 +1,12 @@
-import { useState } from "react";
 import Image from "next/image";
 import ProductModal from "./productModal";
 import { products } from "../data/products";
-import { ProductType } from "../types/Product";
+import { useUIStore } from "@/store/uiStore";
+import { useCartStore } from "@/store/cartStore";
 
-export default function ProductsCards({ cart, setCart, setIsCartOpen }: { cart: any[], setCart: (cart: any[]) => void, setIsCartOpen: (open: boolean) => void }) {
-  const [genderFilter, setGenderFilter] = useState<
-    "TODOS" | "HOMBRE" | "MUJER"
-  >("TODOS");
-  const [selectedProduct, setSelectedProduct] = useState<ProductType | null>(null);
-  const [selectedSize, setSelectedSize] = useState<string>("");
-  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+export default function ProductsCards() {
+  const { genderFilter, setGenderFilter, selectedProduct, setSelectedProduct } = useUIStore();
+  const { addToCart, openCart } = useCartStore();
   return (
     <>
       <section id="new-in" className="py-16 bg-gray-50">
@@ -112,17 +108,7 @@ export default function ProductsCards({ cart, setCart, setIsCartOpen }: { cart: 
         </div>
       </section>
        {selectedProduct && (
-        <ProductModal
-          selectedProduct={selectedProduct}
-          setSelectedProduct={setSelectedProduct}
-          selectedSize={selectedSize}
-          setSelectedSize={setSelectedSize}
-          currentImageIndex={currentImageIndex}
-          setCurrentImageIndex={setCurrentImageIndex}
-          cart={cart}
-          setCart={setCart}
-          setIsCartOpen={setIsCartOpen}
-        />
+        <ProductModal />
       )}
     </>
   );

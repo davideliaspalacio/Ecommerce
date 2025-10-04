@@ -1,34 +1,19 @@
 "use client";
 
 import Link from "next/link";
-import { CartItemType } from "@/components/types/CartItem";
 import AuthModal from "./authModal";
+import { useCartStore } from "@/store/cartStore";
+import { useUIStore } from "@/store/uiStore";
 
-interface HeaderProps {
-  cart: CartItemType[];
-  isCartOpen: boolean;
-  setIsCartOpen: (open: boolean) => void;
-  genderFilter: "TODOS" | "HOMBRE" | "MUJER";
-  setGenderFilter: (filter: "TODOS" | "HOMBRE" | "MUJER") => void;
-  isMobileMenuOpen: boolean;
-  setIsMobileMenuOpen: (open: boolean) => void;
-  showCartAnimation: boolean;
-  isAuthModalOpen: boolean;
-  setIsAuthModalOpen: (open: boolean) => void;
-}
-
-export default function Header({
-  cart,
-  isCartOpen,
-  setIsCartOpen,
-  genderFilter,
-  setGenderFilter,
-  isMobileMenuOpen,
-  setIsMobileMenuOpen,
-  showCartAnimation,
-  isAuthModalOpen,
-  setIsAuthModalOpen,
-}: HeaderProps) {
+export default function Header() {
+  const { cart, isCartOpen, openCart, getItemCount, showCartAnimation } = useCartStore();
+  const { 
+    isMobileMenuOpen, 
+    toggleMobileMenu, 
+    isAuthModalOpen, 
+    openAuthModal, 
+    closeAuthModal 
+  } = useUIStore();
   return (
     <>
       <header className="fixed top-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-sm border-b border-gray-200">
@@ -36,7 +21,7 @@ export default function Header({
           <div className="flex items-center justify-between">
             {/* Mobile Menu Button */}
             <button
-              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              onClick={toggleMobileMenu}
               className="md:hidden text-gray-700 hover:text-black transition-colors"
             >
               <svg
@@ -79,7 +64,7 @@ export default function Header({
                 </svg>
               </button>
               <button
-                onClick={() => setIsAuthModalOpen(true)}
+                onClick={openAuthModal}
                 className="hidden sm:block text-gray-700 hover:text-black transition-colors"
               >
                 <svg
@@ -97,7 +82,7 @@ export default function Header({
                 </svg>
               </button>
               <button
-                onClick={() => setIsCartOpen(true)}
+                onClick={openCart}
                 className="text-gray-700 hover:text-black transition-all duration-300 hover:scale-110 relative"
               >
                 <svg
@@ -119,7 +104,7 @@ export default function Header({
                       showCartAnimation ? "animate-bounce scale-110" : ""
                     }`}
                   >
-                    {cart.reduce((total, item) => total + item.quantity, 0)}
+                    {getItemCount()}
                   </span>
                 )}
               </button>
@@ -146,8 +131,8 @@ export default function Header({
                   </button>
                   <button
                     onClick={() => {
-                      setIsAuthModalOpen(true);
-                      setIsMobileMenuOpen(false);
+                      openAuthModal();
+                      toggleMobileMenu();
                     }}
                     className="text-gray-700 hover:text-black transition-colors"
                   >
@@ -188,7 +173,7 @@ export default function Header({
       </header>
       <AuthModal
         isOpen={isAuthModalOpen}
-        onClose={() => setIsAuthModalOpen(false)}
+        onClose={closeAuthModal}
       />
     </>
   );
