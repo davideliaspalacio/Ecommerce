@@ -28,7 +28,7 @@ export default function ProductModal() {
     <div className={`fixed inset-0 z-[100] bg-black/50 flex items-center justify-center p-4 ${isProductModalClosing ? 'animate-fade-out' : 'animate-fade-in'}`} onClick={closeProductModal}>
     <div className={`bg-white w-full max-w-6xl max-h-[90vh] overflow-y-auto relative ${isProductModalClosing ? 'animate-scale-out' : 'animate-scale-in'}`} onClick={(e) => e.stopPropagation()}>
       {/* Banner Premium */}
-      <div className="bg-[#4a5a3f] text-white px-6 py-3 flex items-center justify-between">
+      <div className="bg-[#4a5a3f] text-white px-6 py-3 flex items-center justify-between sticky top-0 z-10">
         <p className="text-sm">TELA PREMIUM | Una vez la tocas, notarás la diferencia</p>
         <button
           onClick={closeProductModal}

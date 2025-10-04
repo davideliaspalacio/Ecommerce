@@ -48,7 +48,7 @@ export default function Header() {
               </h1>
             </Link>
             <div className="flex items-center gap-2 md:gap-4 ml-auto">
-              <button className="hidden sm:block text-gray-700 hover:text-black transition-colors">
+              <button className="hidden sm:block text-gray-700 hover:text-black transition-colors cursor-pointer">
                 <svg
                   className="w-5 h-5"
                   fill="none"
@@ -65,7 +65,7 @@ export default function Header() {
               </button>
               <button
                 onClick={openAuthModal}
-                className="hidden sm:block text-gray-700 hover:text-black transition-colors"
+                className="hidden sm:block text-gray-700 hover:text-black transition-colors cursor-pointer"
               >
                 <svg
                   className="w-5 h-5"
@@ -83,7 +83,7 @@ export default function Header() {
               </button>
               <button
                 onClick={openCart}
-                className="text-gray-700 hover:text-black transition-all duration-300 hover:scale-110 relative"
+                className="text-gray-700 hover:text-black transition-all duration-300 hover:scale-110 relative cursor-pointer"
               >
                 <svg
                   className="w-5 h-5"
@@ -114,7 +114,7 @@ export default function Header() {
             <div className="md:hidden mt-4 pb-4 border-t border-gray-200">
               <div className="flex flex-col space-y-4 pt-4">
                 <div className="flex items-center gap-4 pt-2 justify-center">
-                  <button className="text-gray-700 hover:text-black transition-colors">
+                  <button className="text-gray-700 hover:text-black transition-colors cursor-pointer">
                     <svg
                       className="w-5 h-5"
                       fill="none"
