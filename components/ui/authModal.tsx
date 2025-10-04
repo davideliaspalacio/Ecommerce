@@ -50,9 +50,9 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
 
   return (
     <div className={`fixed inset-0 z-[100] bg-black/50 flex items-center justify-center p-4 ${isClosing ? 'animate-fade-out' : 'animate-fade-in'}`} onClick={closeAuthModal}>
-      <div className={`bg-white w-full max-w-md rounded-2xl shadow-2xl ${isClosing ? 'animate-scale-out' : 'animate-scale-in'}`} onClick={(e) => e.stopPropagation()}>
+      <div className={`bg-white w-full max-w-md rounded-1xl shadow-2xl ${isClosing ? 'animate-scale-out' : 'animate-scale-in'}`} onClick={(e) => e.stopPropagation()}>
         {/* Header */}
-        <div className="bg-[#4a5a3f] text-white px-6 py-4 rounded-t-2xl flex items-center justify-between">
+        <div className="bg-[#4a5a3f] text-white px-6 py-4 rounded-t-1xl flex items-center justify-between">
           <h2 className="text-xl font-bold">
             {authMode === 'login' ? 'INICIAR SESIÓN' : 'CREAR CUENTA'}
           </h2>
@@ -78,7 +78,7 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
                 required={authMode === 'register'}
                 value={authForm.name}
                 onChange={(e) => setAuthForm({...authForm, name: e.target.value})}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#4a5a3f] focus:border-transparent transition-colors"
+                className="w-full px-4 py-3 border border-gray-300 rounded-1xl focus:outline-none focus:ring-2 focus:ring-[#4a5a3f] focus:border-transparent transition-colors"
                 placeholder="Tu nombre completo"
               />
             </div>
@@ -93,7 +93,7 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
               required
               value={authForm.email}
               onChange={(e) => setAuthForm({...authForm, email: e.target.value})}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#4a5a3f] focus:border-transparent transition-colors"
+              className="w-full px-4 py-3 border border-gray-300 rounded-1xl focus:outline-none focus:ring-2 focus:ring-[#4a5a3f] focus:border-transparent transition-colors"
               placeholder="tu@email.com"
             />
           </div>
@@ -107,7 +107,7 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
               required
               value={authForm.password}
               onChange={(e) => setAuthForm({...authForm, password: e.target.value})}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#4a5a3f] focus:border-transparent transition-colors"
+              className="w-full px-4 py-3 border border-gray-300 rounded-1xl focus:outline-none focus:ring-2 focus:ring-[#4a5a3f] focus:border-transparent transition-colors"
               placeholder="••••••••"
             />
           </div>
@@ -122,7 +122,7 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
                 required={authMode === 'register'}
                 value={authForm.confirmPassword}
                 onChange={(e) => setAuthForm({...authForm, confirmPassword: e.target.value})}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#4a5a3f] focus:border-transparent transition-colors"
+                className="w-full px-4 py-3 border border-gray-300 rounded-1xl focus:outline-none focus:ring-2 focus:ring-[#4a5a3f] focus:border-transparent transition-colors"
                 placeholder="••••••••"
               />
             </div>
@@ -130,7 +130,7 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
 
           <button
             type="submit"
-            className="w-full bg-[#4a5a3f] text-white py-3 font-medium rounded-lg hover:bg-[#3d4a34] transition-colors"
+            className="w-full bg-[#4a5a3f] text-white py-3 font-medium rounded-1xl hover:bg-[#3d4a34] transition-colors"
           >
             {authMode === 'login' ? 'INICIAR SESIÓN' : 'CREAR CUENTA'}
           </button>
@@ -163,7 +163,7 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
             <div className="mt-4 grid grid-cols-2 gap-3">
               <button
                 type="button"
-                className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-lg shadow-sm bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 transition-colors"
+                className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-1xl shadow-sm bg-white text-sm font-medium text-[#4a5a3f] hover:bg-gray-50 transition-colors"
               >
                 <svg className="w-5 h-5" viewBox="0 0 24 24">
                   <path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -173,10 +173,10 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
                 </svg>
                 <span className="ml-2">Google</span>
               </button>
-
+          
               <button
                 type="button"
-                className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-lg shadow-sm bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 transition-colors"
+                className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-1xl shadow-sm bg-white text-sm font-medium text-[#4a5a3f] hover:bg-gray-50 transition-colors"
               >
                 <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
                   <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>

@@ -14,9 +14,15 @@ export default function ProductModal() {
         addToCart(selectedProduct, selectedSize)
         setSelectedProduct(null)
         openCart()
+        setSelectedProduct(null)
+        setSelectedSize("")
+        setCurrentImageIndex(0)
     }
     const closeProductModal = () => {
         setIsProductModalClosing(true)
+        setSelectedProduct(null)
+        setSelectedSize("")
+        setCurrentImageIndex(0)
         setTimeout(() => {
           setSelectedProduct(null)
           setIsProductModalClosing(false)
@@ -67,7 +73,7 @@ export default function ProductModal() {
             </button>
             <button
               onClick={() => setCurrentImageIndex(1)}
-              className={`relative aspect-square bg-gray-100 border-2 ${
+              className={`relative aspect-square bg-gray-100 border-2 width-[50%] ${
                 currentImageIndex === 1 ? "border-black" : "border-transparent"
               }`}
             >
@@ -87,19 +93,20 @@ export default function ProductModal() {
             <p className="text-sm text-gray-500 mb-2">Item: {selectedProduct.id}9060</p>
             <h2 className="text-2xl font-bold mb-2">{selectedProduct.name}</h2>
             <p className="text-2xl font-medium">{selectedProduct.price}</p>
-          </div>
-
-          <div>
-            <div className="flex items-center justify-between mb-3">
-              <p className="text-sm text-gray-600">El modelo mide 1.83m y tiene una talla M</p>
-              {!selectedSize && (
-                <div className="flex items-center gap-1 text-amber-600 text-sm">
+            {!selectedSize && (
+                <div className="flex items-center gap-1 text-amber-600 text-sm mt-5">
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
                   </svg>
                   <span className="font-medium">Selecciona una talla</span>
                 </div>
               )}
+          </div>
+
+          <div>
+            <div className="flex items-center justify-between mb-3">
+                
+              <p className="text-sm text-gray-600">El modelo mide 1.83m y tiene una talla M</p>
             </div>
             <div className="flex gap-2 mb-4">
               {selectedProduct.sizes.map((size: string) => (
@@ -117,8 +124,8 @@ export default function ProductModal() {
               ))}
             </div>
             {!selectedSize && (
-              <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
-                <p className="text-amber-800 text-sm flex items-center gap-2">
+              <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-1xl">
+                <p className="text-amber-800 text-[12px] flex items-center gap-2">
                   <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>

@@ -155,7 +155,7 @@ export default function ShoppingCart() {
                                 item.quantity - 1
                               )
                             }
-                            className="px-3 py-1 hover:bg-gray-100 transition-colors"
+                            className="px-3 py-1 hover:bg-gray-100 transition-colors cursor-pointer"
                           >
                             -
                           </button>
@@ -170,7 +170,7 @@ export default function ShoppingCart() {
                                 item.quantity + 1
                               )
                             }
-                            className="px-3 py-1 hover:bg-gray-100 transition-colors"
+                            className="px-3 py-1 hover:bg-gray-100 transition-colors cursor-pointer"
                           >
                             +
                           </button>
@@ -180,7 +180,7 @@ export default function ShoppingCart() {
                           onClick={() =>
                             removeFromCart(item.product.id, item.size)
                           }
-                          className="text-sm text-red-600 hover:text-red-700 transition-colors"
+                          className="text-sm text-red-600 hover:text-red-700 transition-colors cursor-pointer"
                         >
                           Eliminar
                         </button>

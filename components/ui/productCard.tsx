@@ -2,11 +2,9 @@ import Image from "next/image";
 import ProductModal from "./productModal";
 import { products } from "../data/products";
 import { useUIStore } from "@/store/uiStore";
-import { useCartStore } from "@/store/cartStore";
 
 export default function ProductsCards() {
-  const { genderFilter, setGenderFilter, selectedProduct, setSelectedProduct } = useUIStore();
-  const { addToCart, openCart } = useCartStore();
+  const { genderFilter, setGenderFilter, selectedProduct, setSelectedProduct, setSelectedSize, setCurrentImageIndex } = useUIStore();
   return (
     <>
       <section id="new-in" className="py-16 bg-gray-50">
