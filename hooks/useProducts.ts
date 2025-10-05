@@ -77,21 +77,30 @@ export function useProducts() {
     try {
       setError(null)
       
-      const { data, error } = await supabase
-        .from('products')
-        .insert([productData])
-        .select()
-        .single()
+      console.log('Creating product with data:', productData)
+      
+      const response = await fetch('/api/products/create', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(productData),
+      })
 
-      if (error) {
-        throw error
+      const result = await response.json()
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Error al crear el producto')
       }
 
+      console.log('Product created successfully:', result.data)
+      
       // Actualizar la lista de productos
-      setProducts(prev => [data, ...prev])
-      return { data, error: null }
+      setProducts(prev => [result.data, ...prev])
+      return { data: result.data, error: null }
     } catch (err: any) {
       const errorMessage = err.message || 'Error al crear el producto'
+      console.error('Error creating product:', err)
       setError(errorMessage)
       return { data: null, error: { message: errorMessage } }
     }
@@ -102,22 +111,29 @@ export function useProducts() {
     try {
       setError(null)
       
-      const { data, error } = await supabase
-        .from('products')
-        .update(updates)
-        .eq('id', id)
-        .select()
-        .single()
+      console.log('Updating product:', id, updates)
+      
+      const response = await fetch('/api/products/update', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ id, updates }),
+      })
 
-      if (error) {
-        throw error
+      const result = await response.json()
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Error al actualizar el producto')
       }
+
+      console.log('Product updated successfully:', result.data)
 
       // Actualizar la lista de productos
       setProducts(prev => 
-        prev.map(product => product.id === id ? data : product)
+        prev.map(product => product.id === id ? result.data : product)
       )
-      return { data, error: null }
+      return { data: result.data, error: null }
     } catch (err: any) {
       const errorMessage = err.message || 'Error al actualizar el producto'
       setError(errorMessage)
@@ -130,14 +146,19 @@ export function useProducts() {
     try {
       setError(null)
       
-      const { error } = await supabase
-        .from('products')
-        .delete()
-        .eq('id', id)
+      console.log('Deleting product:', id)
+      
+      const response = await fetch(`/api/products/delete?id=${id}`, {
+        method: 'DELETE',
+      })
 
-      if (error) {
-        throw error
+      const result = await response.json()
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Error al eliminar el producto')
       }
+
+      console.log('Product deleted successfully')
 
       // Remover de la lista de productos
       setProducts(prev => prev.filter(product => product.id !== id))

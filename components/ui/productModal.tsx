@@ -28,7 +28,6 @@ export default function ProductModal() {
           setIsProductModalClosing(false)
         }, 300) 
       }
-      console.log(selectedProduct.image_back, "image back")
   if (!selectedProduct) return null
 
   return (
@@ -39,7 +38,7 @@ export default function ProductModal() {
         <p className="text-sm">TELA PREMIUM | Una vez la tocas, notarás la diferencia</p>
         <button
           onClick={closeProductModal}
-          className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center hover:bg-white/30 transition-colors"
+          className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center hover:bg-white/30 transition-colors cursor-pointer"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -92,7 +91,7 @@ export default function ProductModal() {
         <div className="space-y-6">
           <div>
             <h2 className="text-2xl font-bold mb-2">{selectedProduct.name}</h2>
-            <p className="text-2xl font-medium">{selectedProduct.price}</p>
+            <p className="text-2xl font-medium">{selectedProduct.price ? selectedProduct.price.toLocaleString("es-CO") : "0"}$</p>
             {!selectedSize && (
                 <div className="flex items-center gap-1 text-amber-600 text-sm mt-5">
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -113,7 +112,7 @@ export default function ProductModal() {
                 <button
                   key={size}
                   onClick={() => setSelectedSize(size)}
-                  className={`px-6 py-2 border transition-all duration-200 ${
+                  className={`px-6 py-2 border transition-all duration-200 cursor-pointer ${
                     selectedSize === size
                       ? "border-[#4a5a3f] bg-[#4a5a3f] text-white scale-105"
                       : "border-gray-300 hover:border-[#4a5a3f] hover:scale-105"
@@ -138,7 +137,7 @@ export default function ProductModal() {
           <button
             onClick={handleAddToCart}
             disabled={!selectedSize}
-            className={`w-full py-3 text-white font-medium transition-all duration-300 ${
+            className={`w-full py-3 text-white font-medium transition-all duration-300 cursor-pointer ${
               selectedSize 
                 ? "bg-[#4a5a3f] hover:bg-[#3d4a34] hover:scale-105 active:scale-95" 
                 : "bg-gray-300 cursor-not-allowed"
@@ -151,7 +150,7 @@ export default function ProductModal() {
           <div className="border-t pt-4">
             <button
               onClick={() => setShowAbout(!showAbout)}
-              className="w-full flex items-center justify-between py-2 font-medium"
+              className="w-full flex items-center justify-between py-2 font-medium cursor-pointer"
             >
               <span>SOBRE EL PRODUCTO</span>
               <svg

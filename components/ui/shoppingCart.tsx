@@ -96,7 +96,7 @@ export default function ShoppingCart() {
             <h2 className="text-xl font-bold">CARRITO DE COMPRAS</h2>
             <button
               onClick={handleCloseCart}
-              className="w-8 h-8 rounded-full hover:bg-gray-100 flex items-center justify-center transition-colors"
+              className="w-8 h-8 rounded-full hover:bg-gray-100 flex items-center justify-center transition-colors cursor-pointer"
             >
               <svg
                 className="w-5 h-5"
@@ -221,7 +221,7 @@ export default function ShoppingCart() {
 
               <button
                 onClick={handleWhatsAppClick}
-                className="w-full bg-[#4a5a3f] text-white py-3 font-medium hover:bg-[#3d4a34] transition-colors flex items-center justify-center gap-2"
+                className="w-full bg-[#4a5a3f] text-white py-3 font-medium hover:bg-[#3d4a34] transition-colors flex items-center justify-center gap-2 cursor-pointer"
               >
                 <span>
                   {user
@@ -241,7 +241,7 @@ export default function ShoppingCart() {
 
               <button
                 onClick={handleCloseCart}
-                className="w-full border border-gray-300 py-3 font-medium hover:border-black transition-colors"
+                className="w-full border border-gray-300 py-3 font-medium hover:border-black transition-colors cursor-pointer "
               >
                 SEGUIR COMPRANDO
               </button>

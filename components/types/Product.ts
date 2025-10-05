@@ -36,6 +36,7 @@ export interface CreateProductType {
     specifications?: string[];
     sizes?: string[];
     status?: 'active' | 'inactive' | 'draft' | 'out_of_stock';
+    stock_quantity?: number;
     sku?: string;
     weight?: number;
     dimensions?: {
