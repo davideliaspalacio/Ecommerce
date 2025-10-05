@@ -1,15 +1,36 @@
 "use client"
 
 import { useAuthContext } from '@/contexts/AuthContext'
+import { useState } from 'react'
 
 export default function AuthStatus() {
-  const { user, profile, loading, signOut } = useAuthContext()
+  const { user, profile, loading, error, signOut } = useAuthContext()
+  const [isSigningOut, setIsSigningOut] = useState(false)
+
+  const handleSignOut = async () => {
+    setIsSigningOut(true)
+    try {
+      await signOut()
+    } catch (err) {
+      console.error('Error signing out:', err)
+    } finally {
+      setIsSigningOut(false)
+    }
+  }
 
   if (loading) {
     return (
       <div className="flex items-center space-x-2">
         <div className="w-4 h-4 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin"></div>
         <span className="text-sm text-gray-600">Cargando...</span>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="text-sm text-red-600">
+        Error: {error}
       </div>
     )
   }
@@ -37,10 +58,11 @@ export default function AuthStatus() {
         </div>
       </div>
       <button
-        onClick={() => signOut()}
-        className="text-sm text-red-600 hover:text-red-800 font-medium"
+        onClick={handleSignOut}
+        disabled={isSigningOut}
+        className="text-sm text-red-600 hover:text-red-800 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
       >
-        Cerrar sesión
+        {isSigningOut ? 'Cerrando...' : 'Cerrar sesión'}
       </button>
     </div>
   )

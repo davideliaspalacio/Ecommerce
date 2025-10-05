@@ -27,14 +27,17 @@ export function useAuth() {
   const [profile, setProfile] = useState<Profile | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [profileLoading, setProfileLoading] = useState(false)
 
   useEffect(() => {
+    let isMounted = true
+
     const getInitialSession = async () => {
       try {
         if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
           console.error('Supabase environment variables not loaded')
           setError('Error de configuración: variables de entorno no encontradas')
-          setLoading(false)
+          if (isMounted) setLoading(false)
           return
         }
 
@@ -44,17 +47,19 @@ export function useAuth() {
           console.error('Error getting session:', error)
           setError(error.message)
         } else {
-          setUser(session?.user ?? null)
-          
-          if (session?.user) {
-            await fetchProfile(session.user.id)
+          if (isMounted) {
+            setUser(session?.user ?? null)
+            
+            if (session?.user) {
+              await fetchProfile(session.user.id)
+            }
           }
         }
       } catch (err) {
         console.error('Error in getInitialSession:', err)
         setError('Error al cargar la sesión')
       } finally {
-        setLoading(false)
+        if (isMounted) setLoading(false)
       }
     }
 
@@ -64,38 +69,70 @@ export function useAuth() {
       async (event, session) => {
         console.log('Auth state changed:', event, session?.user?.id)
         
-        setUser(session?.user ?? null)
-        
-        if (session?.user) {
-          await fetchProfile(session.user.id)
-        } else {
-          setProfile(null)
+        if (isMounted) {
+          setUser(session?.user ?? null)
+          
+          if (session?.user) {
+            await fetchProfile(session.user.id)
+          } else {
+            setProfile(null)
+          }
+          setLoading(false)
         }
-        setLoading(false)
       }
     )
 
-    return () => subscription.unsubscribe()
+    return () => {
+      isMounted = false
+      subscription.unsubscribe()
+    }
   }, [])
 
-  const fetchProfile = async (userId: string) => {
+  const fetchProfile = async (userId: string, retryCount = 0) => {
+    if (profileLoading) return
+
+    setProfileLoading(true)
+    
     try {
-      const { data, error } = await supabase
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Timeout: La solicitud tardó demasiado')), 5000)
+      )
+
+      const profilePromise = supabase
         .from('profiles')
         .select('*')
         .eq('id', userId)
         .single()
 
+      const { data, error } = await Promise.race([profilePromise, timeoutPromise]) as any
+
       if (error) {
         console.error('Error fetching profile:', error)
+        
+        if (retryCount < 2) {
+          console.log(`Reintentando obtener perfil (intento ${retryCount + 1}/2)`)
+          setTimeout(() => fetchProfile(userId, retryCount + 1), 1000 * (retryCount + 1))
+          return
+        }
+        
         setError(error.message)
         return
       }
 
       setProfile(data)
-    } catch (err) {
+      setError(null) 
+    } catch (err: any) {
       console.error('Error in fetchProfile:', err)
+      
+      if (retryCount < 2 && err.message?.includes('Timeout')) {
+        console.log(`Reintentando después de timeout (intento ${retryCount + 1}/2)`)
+        setTimeout(() => fetchProfile(userId, retryCount + 1), 2000 * (retryCount + 1))
+        return
+      }
+      
       setError('Error al cargar el perfil')
+    } finally {
+      setProfileLoading(false)
     }
   }
 
@@ -242,7 +279,7 @@ export function useAuth() {
   return {
     user,
     profile,
-    loading,
+    loading: loading || profileLoading, 
     error,
     
     signUp,
