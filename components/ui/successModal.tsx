@@ -11,7 +11,7 @@ export default function SuccessModal() {
         <div className={`fixed inset-0 z-[100] bg-black/50 flex items-center justify-center p-4 ${isSuccessModalClosing ? 'animate-fade-out' : 'animate-fade-in'}`} onClick={closeSuccessModal}>
         <div className={`bg-white w-full max-w-md rounded-2xl shadow-2xl ${isSuccessModalClosing ? 'animate-scale-out' : 'animate-scale-in'}`} onClick={(e) => e.stopPropagation()}>
           {/* Header */}
-          <div className="bg-gradient-to-r bg-[#4a5a3f]  text-white px-6 py-4 rounded-t-2xl text-center">
+          <div className="bg-gradient-to-r bg-[#4a5a3f]  text-white px-6 py-4 rounded-1xl text-center">
             <h2 className="text-xl font-bold">¡COMPRA EXITOSA!</h2>
           </div>
 
@@ -44,7 +44,7 @@ export default function SuccessModal() {
             </div>
 
             {/* Features */}
-            <div className="bg-gray-50 rounded-lg p-4 mb-6">
+            <div className="bg-gray-200 rounded-lg p-4 mb-6">
               <h5 className="font-semibold text-gray-900 mb-3 text-sm">¿Qué sigue?</h5>
               <div className="space-y-2 text-xs text-gray-600">
                 <div className="flex items-center gap-2">
@@ -93,7 +93,7 @@ export default function SuccessModal() {
             {/* Action Button */}
             <button
               onClick={closeSuccessModal}
-              className="w-full bg-[#4a5a3f] text-white py-3 font-medium rounded-lg hover:bg-[#3d4a34] transition-colors"
+              className="w-full bg-[#4a5a3f] text-white py-3 font-medium rounded-1xl hover:bg-[#3d4a34] transition-color cursor-pointer"
             >
               CONTINUAR COMPRANDO
             </button>

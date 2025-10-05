@@ -78,7 +78,7 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
         {/* Header */}
         <div className="bg-[#4a5a3f] text-white px-6 py-4 rounded-t-1xl flex items-center justify-between">
           <h2 className="text-xl font-bold">
-            {authMode === 'login' ? 'INICIAR SESIÓN' : 'CREAR CUENTA'}
+            {authMode === 'login' ? 'INICIAR SESIÓN' : 'CUENTA CREADA'}
           </h2>
           <button
             onClick={closeAuthModal}
