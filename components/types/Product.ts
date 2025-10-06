@@ -47,7 +47,6 @@ export interface CreateProductType {
     tags?: string[];
   }
 
-// Tipo para filtros de productos
 export interface ProductFilters {
     category?: string;
     gender?: string;

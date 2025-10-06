@@ -20,6 +20,12 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
   const [isClosing, setIsClosing] = useState(false)
   const [loading, setLoading] = useState(false)
   const [showVerificationMessage, setShowVerificationMessage] = useState(false)
+  const [validationErrors, setValidationErrors] = useState<{[key: string]: string}>({})
+
+  const validateName = (name: string) => {
+    const nameParts = name.trim().split(/\s+/).filter(part => part.length > 0)
+    return nameParts.length >= 2
+  }
 
   const closeAuthModal = () => {
     setIsClosing(true)
@@ -29,6 +35,7 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
       setIsClosing(false)
       setAuthForm({ name: '', email: '', password: '', confirmPassword: '' })
       setLoading(false)
+      setValidationErrors({})
     }, 300)
   }
 
@@ -36,6 +43,15 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
     e.preventDefault()
     setLoading(true)
     clearError()
+    setValidationErrors({})
+
+    if (authMode === 'register') {
+      if (!validateName(authForm.name)) {
+        setValidationErrors({ name: 'Por favor ingresa tu nombre completo (al menos 2 nombres)' })
+        setLoading(false)
+        return
+      }
+    }
 
     try {
       if (authMode === 'login') {
@@ -148,10 +164,32 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
                 type="text"
                 required={authMode === 'register'}
                 value={authForm.name}
-                onChange={(e) => setAuthForm({...authForm, name: e.target.value})}
-                className="w-full px-4 py-3 border border-gray-300 rounded-1xl focus:outline-none focus:ring-2 focus:ring-[#4a5a3f] focus:border-transparent transition-colors"
+                onChange={(e) => {
+                  const value = e.target.value
+                  setAuthForm({...authForm, name: value})
+                  if (value.trim().length > 0) {
+                    if (!validateName(value)) {
+                      setValidationErrors({...validationErrors, name: 'Por favor ingresa tu nombre completo (al menos 2 nombres)'})
+                    } else {
+                      setValidationErrors({...validationErrors, name: ''})
+                    }
+                  } else {
+                    setValidationErrors({...validationErrors, name: ''})
+                  }
+                }}
+                className={`w-full px-4 py-3 border rounded-1xl focus:outline-none focus:ring-2 focus:ring-[#4a5a3f] focus:border-transparent transition-colors ${
+                  validationErrors.name ? 'border-red-500' : 'border-gray-300'
+                }`}
                 placeholder="Tu nombre completo"
               />
+              {validationErrors.name && (
+                <p className="mt-2 text-[12px] text-red-600 flex items-center gap-1">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                  </svg>
+                  {validationErrors.name}
+                </p>
+              )}
             </div>
           )}
 

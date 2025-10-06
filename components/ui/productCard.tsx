@@ -2,10 +2,19 @@ import Image from "next/image";
 import ProductModal from "./productModal";
 import { useUIStore } from "@/store/uiStore";
 import { useProductsContext } from "@/contexts/ProductsContext";
+import { useProductUrl } from "@/hooks/useProductUrl";
 
 export default function ProductsCards() {
   const { genderFilter, setGenderFilter, selectedProduct, setSelectedProduct, setSelectedSize, setCurrentImageIndex } = useUIStore();
   const { products, loading, error, fetchProducts, fetchProductsByGender } = useProductsContext();
+  const { openProductFromUrl, generateProductUrl } = useProductUrl();
+
+  const handleProductClick = (product: any) => {
+    setSelectedProduct(product);
+    setSelectedSize("");
+    setCurrentImageIndex(0);
+  };
+
   return (
     <>
       <section id="new-in" className="py-16 bg-gray-50">
@@ -72,9 +81,7 @@ export default function ProductsCards() {
                 <article
                   key={product.id}
                   className="pointer pt3 pb4 flex flex-column h-100 group cursor-pointer"
-                  onClick={() => {
-                    setSelectedProduct(product);
-                  }}
+                  onClick={() => handleProductClick(product)}
                 >
                   <div className="relative mb-4">
                     <div className="dib relative hoverEffect">
@@ -104,7 +111,7 @@ export default function ProductsCards() {
                   {/* Product Info */}
                   <div className="flex flex-column justify-end items-center">
                     <span className="text-sm font-medium text-gray-700 mb-2">
-                      {product.category}
+                      {product.name}
                     </span>
 
                     <div className="flex flex-column justify-start">

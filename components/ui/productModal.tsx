@@ -2,12 +2,15 @@ import { useState } from "react"
 import Image from "next/image"
 import { useUIStore } from "@/store/uiStore"
 import { useCartStore } from "@/store/cartStore"
+import { useProductUrl } from "@/hooks/useProductUrl"
 
 export default function ProductModal() {
     const { selectedProduct, selectedSize, currentImageIndex, setSelectedProduct, setSelectedSize, setCurrentImageIndex } = useUIStore()
     const { addToCart, openCart } = useCartStore()
+    const { copyProductLink } = useProductUrl()
     const [isProductModalClosing, setIsProductModalClosing] = useState(false)
     const [showAbout, setShowAbout] = useState(false)
+    const [isCopyingLink, setIsCopyingLink] = useState(false)
     
     const handleAddToCart = () => {
         if (!selectedProduct || !selectedSize) return
@@ -18,16 +21,33 @@ export default function ProductModal() {
         setSelectedSize("")
         setCurrentImageIndex(0)
     }
+
+    const handleCopyLink = async () => {
+        if (!selectedProduct) return
+        
+        setIsCopyingLink(true)
+        const result = await copyProductLink(selectedProduct.id)
+        
+        if (result.success) {
+            setTimeout(() => {
+                setIsCopyingLink(false)
+            }, 2000)
+        } else {
+            setIsCopyingLink(false)
+        }
+    }
+
     const closeProductModal = () => {
         setIsProductModalClosing(true)
         setSelectedProduct(null)
         setSelectedSize("")
         setCurrentImageIndex(0)
         setTimeout(() => {
-          setSelectedProduct(null)
           setIsProductModalClosing(false)
         }, 300) 
       }
+
+      console.log(selectedProduct.image_back, 'currentImageIndex')
   if (!selectedProduct) return null
 
   return (
@@ -36,14 +56,41 @@ export default function ProductModal() {
       {/* Banner Premium */}
       <div className="bg-[#4a5a3f] text-white px-6 py-3 flex items-center justify-between sticky top-0 z-10">
         <p className="text-sm">TELA PREMIUM | Una vez la tocas, notarás la diferencia</p>
-        <button
-          onClick={closeProductModal}
-          className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center hover:bg-white/30 transition-colors cursor-pointer"
-        >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={handleCopyLink}
+            disabled={isCopyingLink}
+            className={`flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium transition-all ${
+              isCopyingLink 
+                ? ' bg-white/20 cursor-not-allowed' 
+                : 'bg-white/20 hover:bg-white/30 cursor-pointer'
+            }`}
+          >
+            {isCopyingLink ? (
+              <>
+                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                ¡Copiado!
+              </>
+            ) : (
+              <>
+                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z" />
+                </svg>
+                Compartir Producto
+              </>
+            )}
+          </button>
+          <button
+            onClick={closeProductModal}
+            className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center hover:bg-white/30 transition-colors cursor-pointer"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
       </div>
 
       <div className="grid md:grid-cols-2 gap-8 p-8">
@@ -51,39 +98,29 @@ export default function ProductModal() {
         <div className="space-y-4">
           <div className="relative aspect-square bg-gray-100">
             <Image
-              src={currentImageIndex === 0 ? selectedProduct.image : selectedProduct.image_back}
+              src={currentImageIndex === 0 ? selectedProduct.image : (selectedProduct.image_back || selectedProduct.image)}
               alt={selectedProduct.name}
               fill
               className="object-cover"
             />
           </div>
-          <div className="grid grid-cols-2 gap-4">
-            <button
-              onClick={() => setCurrentImageIndex(0)}
-              className={`relative aspect-square bg-gray-100 border-2 ${
-                currentImageIndex === 0 ? "border-black" : "border-transparent"
-              }`}
-            >
-              <Image
-                src={selectedProduct.image || "/placeholder.svg"}
-                alt="Frente"
-                fill
-                className="object-cover"
-              />
-            </button>
-            <button
-              onClick={() => setCurrentImageIndex(1)}
-              className={`relative aspect-square bg-gray-100 border-2 width-[50%] ${
-                currentImageIndex === 1 ? "border-black" : "border-transparent"
-              }`}
-            >
-              <Image
-                src={selectedProduct.image_back || "/placeholder.svg"}
-                alt="Espalda"
-                fill
-                className="object-cover"
-              />
-            </button>
+          <div className={`grid gap-4 ${selectedProduct.image_back ? 'grid-cols-2' : 'grid-cols-1'}`}>
+            {selectedProduct.image_back && (
+              <button
+                onClick={() => setCurrentImageIndex(1)}
+                className={`relative aspect-square bg-gray-100 border-2 width-[50%] ${
+                  currentImageIndex === 1 ? "border-black" : "border-transparent"
+                }`}
+              >
+                <Image
+                  src={selectedProduct.image_back}
+                  alt="Espalda"
+                  fill
+                  className="object-cover"
+                />
+              </button>
+            )}
+
           </div>
         </div>
 
@@ -171,11 +208,6 @@ export default function ProductModal() {
                       <li key={index}>• {spec}</li>
                     ))}
                   </ul>
-                </div>
-
-                <div>
-                  <p className="font-medium mb-2">Especificaciones del producto</p>
-                    <p className="text-gray-600">{selectedProduct.specifications.join(", ")}</p>
                 </div>
               </div>
             )}
