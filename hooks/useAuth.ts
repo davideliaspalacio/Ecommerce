@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { User, Session } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase'
+import { useProfileCacheStore } from '@/store/profileCacheStore'
 
 export interface Profile {
   id: string
@@ -29,6 +30,13 @@ export function useAuth() {
   const [error, setError] = useState<string | null>(null)
   const [profileLoading, setProfileLoading] = useState(false)
 
+  // Usar el store de Zustand para el caché
+  const { 
+    getCachedProfile, 
+    setCachedProfile, 
+    clearProfileCache 
+  } = useProfileCacheStore()
+
   useEffect(() => {
     let isMounted = true
 
@@ -51,6 +59,13 @@ export function useAuth() {
             setUser(session?.user ?? null)
             
             if (session?.user) {
+              // Verificar caché primero
+              const cachedProfile = getCachedProfile(session.user.id)
+              if (cachedProfile) {
+                setProfile(cachedProfile)
+                setLoading(false)
+                return
+              }
               await fetchProfile(session.user.id)
             }
           }
@@ -70,12 +85,25 @@ export function useAuth() {
         console.log('Auth state changed:', event, session?.user?.id)
         
         if (isMounted) {
-          setUser(session?.user ?? null)
-          
-          if (session?.user) {
-            await fetchProfile(session.user.id)
-          } else {
-            setProfile(null)
+          const newUser = session?.user ?? null
+          const currentUserId = user?.id
+          const newUserId = newUser?.id
+          if (currentUserId !== newUserId) {
+            setUser(newUser)
+            
+            if (newUser) {
+              const cachedProfile = getCachedProfile(newUser.id)
+              if (cachedProfile) {
+
+                setProfile(cachedProfile)
+              } else {
+                await fetchProfile(newUser.id)
+              }
+            } else {
+              console.log('🚪 Usuario cerró sesión, limpiando caché')
+              setProfile(null)
+              clearProfileCache() // Limpiar caché al cerrar sesión
+            }
           }
           setLoading(false)
         }
@@ -89,13 +117,22 @@ export function useAuth() {
   }, [])
 
   const fetchProfile = async (userId: string, retryCount = 0) => {
-    if (profileLoading) return
-
+    // Verificar caché antes de hacer la llamada
+    const cachedProfile = getCachedProfile(userId)
+    if (cachedProfile) {
+      console.log('Perfil encontrado en caché, evitando llamada a DB')
+      setProfile(cachedProfile)
+      setProfileLoading(false)
+      return
+    }
+    if (profileLoading) {
+      return
+    }
     setProfileLoading(true)
     
     try {
       const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Timeout: La solicitud tardó demasiado')), 5000)
+        setTimeout(() => reject(new Error('Timeout: La solicitud tardó demasiado')), 10000)
       )
 
       const profilePromise = supabase
@@ -119,6 +156,8 @@ export function useAuth() {
         return
       }
 
+      // Guardar en caché y actualizar estado
+      setCachedProfile(userId, data)
       setProfile(data)
       setError(null) 
     } catch (err: any) {
@@ -197,6 +236,8 @@ export function useAuth() {
         return { error }
       }
 
+      // Limpiar caché y estados
+      clearProfileCache()
       setUser(null)
       setProfile(null)
       return { error: null }
@@ -229,6 +270,8 @@ export function useAuth() {
       }
 
       if (data) {
+        // Actualizar caché con los nuevos datos
+        setCachedProfile(user.id, data)
         setProfile(data)
       }
 
