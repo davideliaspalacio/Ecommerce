@@ -3,13 +3,16 @@
 import Link from "next/link";
 import AuthModal from "./authModal";
 import ConfirmModal from "./ConfirmModal";
+import WishlistModal from "./wishlistModal";
 import { useCartStore } from "@/store/cartStore";
+import { useWishlistStore } from "@/store/wishlistStore";
 import { useUIStore } from "@/store/uiStore";
 import { useAuthContext } from "@/contexts/AuthContext";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 export default function Header() {
   const { cart, isCartOpen, openCart, getItemCount, showCartAnimation } = useCartStore();
+  const { wishlist, openWishlist, getWishlistCount } = useWishlistStore();
   const { 
     isMobileMenuOpen, 
     toggleMobileMenu, 
@@ -19,6 +22,11 @@ export default function Header() {
   } = useUIStore();
   const { user, profile, signOut, loading } = useAuthContext();
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   const handleSignOutClick = () => {
     setIsConfirmModalOpen(true);
@@ -129,6 +137,33 @@ export default function Header() {
                   </svg>
                 </button>
               )}
+              
+              {/* Botón de Wishlist */}
+              <button
+                onClick={openWishlist}
+                className="text-gray-700 hover:text-red-500 transition-all duration-300 hover:scale-110 relative cursor-pointer"
+                title="Mis favoritos"
+              >
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+                  />
+                </svg>
+                {isMounted && getWishlistCount() > 0 && (
+                  <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium">
+                    {getWishlistCount()}
+                  </span>
+                )}
+              </button>
+              
               <button
                 onClick={openCart}
                 className="text-gray-700 hover:text-black transition-all duration-300 hover:scale-110 relative cursor-pointer"
@@ -146,7 +181,7 @@ export default function Header() {
                     d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"
                   />
                 </svg>
-                {cart.length > 0 && (
+                {isMounted && cart.length > 0 && (
                   <span
                     className={`absolute -top-2 -right-2 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center transition-all duration-300 ${
                       showCartAnimation ? "animate-bounce scale-110" : ""
@@ -258,6 +293,7 @@ export default function Header() {
         isOpen={isAuthModalOpen}
         onClose={closeAuthModal}
       />
+      <WishlistModal />
       <ConfirmModal
         isOpen={isConfirmModalOpen}
         onClose={() => setIsConfirmModalOpen(false)}

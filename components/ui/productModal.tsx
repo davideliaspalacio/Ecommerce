@@ -4,11 +4,15 @@ import { useUIStore } from "@/store/uiStore"
 import { useCartStore } from "@/store/cartStore"
 import { useProductUrl } from "@/hooks/useProductUrl"
 import { getCurrentPrice, getSavingsAmount, isDiscountActive, getDiscountPercentage } from "@/components/types/Product"
+import { useWishlistStore } from "@/store/wishlistStore"
+import { useAuthContext } from "@/contexts/AuthContext"
 
 export default function ProductModal() {
-    const { selectedProduct, selectedSize, currentImageIndex, setSelectedProduct, setSelectedSize, setCurrentImageIndex } = useUIStore()
+    const { selectedProduct, selectedSize, currentImageIndex, setSelectedProduct, setSelectedSize, setCurrentImageIndex, openAuthModal } = useUIStore()
     const { addToCart, openCart } = useCartStore()
     const { copyProductLink } = useProductUrl()
+    const { isInWishlist, toggleWishlist, isLoading } = useWishlistStore()
+    const { user } = useAuthContext()
     const [isProductModalClosing, setIsProductModalClosing] = useState(false)
     const [showAbout, setShowAbout] = useState(false)
     const [showDeliveryInfo, setShowDeliveryInfo] = useState(true)
@@ -39,6 +43,17 @@ export default function ProductModal() {
         }
     }
 
+    const handleWishlistToggle = async () => {
+        if (!selectedProduct) return
+        
+        if (!user) {
+            openAuthModal()
+            return
+        }
+
+        await toggleWishlist(selectedProduct)
+    }
+
     const closeProductModal = () => {
         setIsProductModalClosing(true)
         setSelectedProduct(null)
@@ -49,7 +64,6 @@ export default function ProductModal() {
         }, 300) 
       }
 
-      console.log(selectedProduct.image_back, 'currentImageIndex')
   if (!selectedProduct) return null
 
   return (
@@ -84,6 +98,34 @@ export default function ProductModal() {
               </>
             )}
           </button>
+          
+          {/* Botón de Wishlist */}
+          <button
+            onClick={handleWishlistToggle}
+            disabled={isLoading}
+            className={`w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300 ${
+              isInWishlist(selectedProduct?.id || '')
+                ? 'bg-red-500 text-white hover:bg-red-600'
+                : 'bg-white/20 text-white hover:bg-white/30'
+            } ${isLoading ? 'opacity-50 cursor-not-allowed' : 'hover:scale-110'}`}
+          >
+            <svg
+              className={`w-4 h-4 transition-all duration-300 ${
+                isInWishlist(selectedProduct?.id || '') ? 'fill-current' : 'stroke-current'
+              }`}
+              fill={isInWishlist(selectedProduct?.id || '') ? 'currentColor' : 'none'}
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+              />
+            </svg>
+          </button>
+          
           <button
             onClick={closeProductModal}
             className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center hover:bg-white/30 transition-colors cursor-pointer"

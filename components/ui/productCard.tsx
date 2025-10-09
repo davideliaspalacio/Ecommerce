@@ -8,17 +8,32 @@ import { useProductsContext } from "@/contexts/ProductsContext";
 import { useFilteredProducts } from "@/hooks/useFilteredProducts";
 import { useProductUrl } from "@/hooks/useProductUrl";
 import { getCurrentPrice, getSavingsAmount, isDiscountActive, getDiscountPercentage } from "@/components/types/Product";
+import { useWishlistStore } from "@/store/wishlistStore";
+import { useAuthContext } from "@/contexts/AuthContext";
 
 export default function ProductsCards() {
-  const { genderFilter, setGenderFilter, selectedProduct, setSelectedProduct, setSelectedSize, setCurrentImageIndex } = useUIStore();
+  const { genderFilter, setGenderFilter, selectedProduct, setSelectedProduct, setSelectedSize, setCurrentImageIndex, openAuthModal } = useUIStore();
   const { loading, error, fetchProducts, fetchProductsByGender } = useProductsContext();
   const { openProductFromUrl, generateProductUrl } = useProductUrl();
   const { filteredProducts, isFiltering } = useFilteredProducts();
+  const { isInWishlist, toggleWishlist, isLoading } = useWishlistStore();
+  const { user } = useAuthContext();
 
   const handleProductClick = (product: any) => {
     setSelectedProduct(product);
     setSelectedSize("");
     setCurrentImageIndex(0);
+  };
+
+  const handleWishlistToggle = async (e: React.MouseEvent, product: any) => {
+    e.stopPropagation(); // Evitar que se abra el modal
+    
+    if (!user) {
+      openAuthModal();
+      return;
+    }
+
+    await toggleWishlist(product);
   };
 
   return (
@@ -118,6 +133,33 @@ export default function ProductsCards() {
                         className="w-full h-full absolute top-0 left-0 z-10 object-cover opacity-0 group-hover:opacity-100 transition-opacity duration-300"
                       />
                     </div>
+                    
+                    {/* Botón de Wishlist */}
+                    <button
+                      onClick={(e) => handleWishlistToggle(e, product)}
+                      disabled={isLoading}
+                      className={`absolute top-3 right-3 w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 z-20 ${
+                        isInWishlist(product.id)
+                          ? 'bg-red-500 text-white hover:bg-red-600 scale-110'
+                          : 'bg-white/80 text-gray-600 hover:bg-white hover:text-red-500'
+                      } ${isLoading ? 'opacity-50 cursor-not-allowed' : 'hover:scale-110'}`}
+                    >
+                      <svg
+                        className={`w-5 h-5 transition-all duration-300 ${
+                          isInWishlist(product.id) ? 'fill-current' : 'stroke-current'
+                        }`}
+                        fill={isInWishlist(product.id) ? 'currentColor' : 'none'}
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+                        />
+                      </svg>
+                    </button>
                   </div>
 
                   {/* Product Info */}

@@ -12,7 +12,6 @@ export default function AuthStatus() {
     try {
       await signOut()
     } catch (err) {
-      console.error('Error signing out:', err)
     } finally {
       setIsSigningOut(false)
     }

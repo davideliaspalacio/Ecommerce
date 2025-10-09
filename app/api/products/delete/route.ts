@@ -20,7 +20,6 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'Product ID is required' }, { status: 400 })
     }
     
-    console.log('Deleting product:', id)
     
     const { error } = await supabaseAdmin
       .from('products')
@@ -28,14 +27,11 @@ export async function DELETE(request: NextRequest) {
       .eq('id', id)
 
     if (error) {
-      console.error('Supabase error:', error)
       return NextResponse.json({ error: error.message }, { status: 400 })
     }
 
-    console.log('Product deleted successfully')
     return NextResponse.json({ error: null })
   } catch (error: any) {
-    console.error('Error deleting product:', error)
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
 }

@@ -82,7 +82,6 @@ export function useAuth() {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        console.log('Auth state changed:', event, session?.user?.id)
         
         if (isMounted) {
           const newUser = session?.user ?? null
@@ -100,7 +99,6 @@ export function useAuth() {
                 await fetchProfile(newUser.id)
               }
             } else {
-              console.log('🚪 Usuario cerró sesión, limpiando caché')
               setProfile(null)
               clearProfileCache() // Limpiar caché al cerrar sesión
             }
@@ -120,7 +118,6 @@ export function useAuth() {
     // Verificar caché antes de hacer la llamada
     const cachedProfile = getCachedProfile(userId)
     if (cachedProfile) {
-      console.log('Perfil encontrado en caché, evitando llamada a DB')
       setProfile(cachedProfile)
       setProfileLoading(false)
       return
@@ -147,7 +144,6 @@ export function useAuth() {
         console.error('Error fetching profile:', error)
         
         if (retryCount < 2) {
-          console.log(`Reintentando obtener perfil (intento ${retryCount + 1}/2)`)
           setTimeout(() => fetchProfile(userId, retryCount + 1), 1000 * (retryCount + 1))
           return
         }
@@ -164,7 +160,6 @@ export function useAuth() {
       console.error('Error in fetchProfile:', err)
       
       if (retryCount < 2 && err.message?.includes('Timeout')) {
-        console.log(`Reintentando después de timeout (intento ${retryCount + 1}/2)`)
         setTimeout(() => fetchProfile(userId, retryCount + 1), 2000 * (retryCount + 1))
         return
       }

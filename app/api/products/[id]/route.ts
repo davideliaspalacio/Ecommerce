@@ -22,7 +22,6 @@ export async function GET(
       .single()
 
     if (error) {
-      console.error('Error fetching product by ID:', error)
       return NextResponse.json(
         { error: 'Error al buscar el producto' },
         { status: 500 }
@@ -38,7 +37,6 @@ export async function GET(
 
     return NextResponse.json({ product })
   } catch (error) {
-    console.error('Error in product API:', error)
     return NextResponse.json(
       { error: 'Error interno del servidor' },
       { status: 500 }

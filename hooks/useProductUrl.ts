@@ -17,7 +17,6 @@ export function useProductUrl() {
   const openProductFromUrl = async (productId: string) => {
     // Evitar llamadas duplicadas para el mismo producto
     if (loadedProductIdRef.current === productId || isProcessingRef.current) {
-      console.log(`🚫 Evitando llamada duplicada para producto ${productId}`)
       return
     }
 
@@ -26,11 +25,9 @@ export function useProductUrl() {
       setIsLoadingProduct(true)
       loadedProductIdRef.current = productId
       
-      console.log(`🔍 Buscando producto ${productId} en la DB...`)
       const product = await fetchProductById(productId)
       
       if (product) {
-        console.log(`✅ Producto ${productId} encontrado y cargado`)
         setSelectedProduct(product)
         setSelectedSize('')
         setCurrentImageIndex(0)
@@ -79,10 +76,8 @@ export function useProductUrl() {
     const productId = searchParams.get('product')
     
     if (productId && productId !== loadedProductIdRef.current) {
-      console.log(`🔄 URL cambió, cargando producto: ${productId}`)
       openProductFromUrl(productId)
     } else if (!productId && loadedProductIdRef.current) {
-      console.log(`🧹 Limpiando producto de la URL`)
       setSelectedProduct(null)
       setSelectedSize('')
       setCurrentImageIndex(0)

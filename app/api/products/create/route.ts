@@ -22,7 +22,6 @@ export async function POST(request: NextRequest) {
       updated_at: new Date().toISOString()
     }
     
-    console.log('Creating product with data:', productToCreate)
     
     const { data, error } = await supabaseAdmin
       .from('products')
@@ -31,14 +30,11 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (error) {
-      console.error('Supabase error:', error)
       return NextResponse.json({ error: error.message }, { status: 400 })
     }
 
-    console.log('Product created successfully:', data)
     return NextResponse.json({ data, error: null })
   } catch (error: any) {
-    console.error('Error creating product:', error)
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
 }

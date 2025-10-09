@@ -8,7 +8,6 @@ export async function POST(request: NextRequest) {
     const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 
     if (!supabaseUrl || !supabaseServiceKey) {
-      console.error('Missing Supabase environment variables')
       return NextResponse.json({ error: 'Server configuration error' }, { status: 500 })
     }
 
@@ -50,7 +49,6 @@ export async function POST(request: NextRequest) {
       .upload(filePath, file)
 
     if (error) {
-      console.error('Error uploading file:', error)
       return NextResponse.json({ error: 'Failed to upload file' }, { status: 500 })
     }
 
@@ -66,7 +64,6 @@ export async function POST(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('Error in upload-image API:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

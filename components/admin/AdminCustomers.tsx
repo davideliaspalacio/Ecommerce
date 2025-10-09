@@ -51,7 +51,6 @@ export default function AdminCustomers() {
           .order('created_at', { ascending: false });
 
         if (profilesError) {
-          console.error('Error fetching profiles:', profilesError);
           alert('Error al cargar los usuarios: ' + profilesError.message);
           return;
         }
@@ -63,7 +62,6 @@ export default function AdminCustomers() {
           .order('created_at', { ascending: false });
 
         if (ordersError) {
-          console.warn('Error fetching orders:', ordersError);
           // Continuar sin datos de órdenes
         }
 
@@ -89,7 +87,6 @@ export default function AdminCustomers() {
 
         setCustomers(customersWithStats);
       } catch (error) {
-        console.error('Error fetching customers:', error);
         alert('Error al cargar los usuarios: ' + (error as Error).message);
       } finally {
         setLoading(false);
@@ -108,7 +105,6 @@ export default function AdminCustomers() {
         .eq('id', customerId);
 
       if (error) {
-        console.error('Error updating customer status:', error);
         alert('Error al actualizar el estado del cliente: ' + error.message);
         return;
       }
@@ -118,7 +114,6 @@ export default function AdminCustomers() {
         customer.id === customerId ? { ...customer, status: newStatus } : customer
       ));
     } catch (error) {
-      console.error('Error updating customer status:', error);
       alert('Error al actualizar el estado del cliente: ' + (error as Error).message);
     }
   };

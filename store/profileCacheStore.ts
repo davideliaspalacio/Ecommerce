@@ -33,18 +33,14 @@ export const useProfileCacheStore = create<ProfileCacheState>()(
         if (cached) {
           const age = Date.now() - cached.timestamp
           const isValid = age < cacheDuration
-          console.log(`🔍 Verificando caché para ${userId}: edad=${Math.round(age/1000)}s, válido=${isValid}`)
           
           if (isValid) {
-            console.log('✅ Perfil obtenido del caché Zustand')
             return cached.profile
           } else {
-            console.log('⏰ Caché expirado, eliminando')
             cache.delete(userId)
             set({ cache: new Map(cache) })
           }
         } else {
-          console.log(`❌ No hay caché para ${userId}`)
         }
         
         return null
@@ -54,7 +50,6 @@ export const useProfileCacheStore = create<ProfileCacheState>()(
         const { cache } = get()
         cache.set(userId, { profile, timestamp: Date.now() })
         set({ cache: new Map(cache) })
-        console.log('Perfil guardado en caché Zustand')
       },
 
       clearProfileCache: (userId?: string) => {
@@ -62,10 +57,8 @@ export const useProfileCacheStore = create<ProfileCacheState>()(
         
         if (userId) {
           cache.delete(userId)
-          console.log(`Caché del usuario ${userId} limpiado`)
         } else {
           cache.clear()
-          console.log('Todo el caché de perfiles limpiado')
         }
         
         set({ cache: new Map(cache) })
@@ -98,10 +91,8 @@ export const useProfileCacheStore = create<ProfileCacheState>()(
 
       onRehydrateStorage: () => (state) => {
         if (state && Array.isArray(state.cache)) {
-          console.log('🔄 Hidratando caché desde localStorage:', state.cache.length, 'perfiles')
           state.cache = new Map(state.cache as [string, CachedProfile][])
         } else {
-          console.log('🆕 Inicializando caché vacío')
         }
       }
     }

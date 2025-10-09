@@ -75,7 +75,6 @@ export function useProducts() {
     try {
       setError(null)
       
-      console.log('Creating product with data:', productData)
       
       const response = await fetch('/api/products/create', {
         method: 'POST',
@@ -91,7 +90,6 @@ export function useProducts() {
         throw new Error(result.error || 'Error al crear el producto')
       }
 
-      console.log('Product created successfully:', result.data)
       
       // Actualizar la lista de productos
       setProducts(prev => [result.data, ...prev])
@@ -109,7 +107,6 @@ export function useProducts() {
     try {
       setError(null)
       
-      console.log('Updating product:', id, updates)
       
       const response = await fetch('/api/products/update', {
         method: 'PUT',
@@ -125,7 +122,6 @@ export function useProducts() {
         throw new Error(result.error || 'Error al actualizar el producto')
       }
 
-      console.log('Product updated successfully:', result.data)
 
       // Actualizar la lista de productos
       setProducts(prev => 
@@ -144,7 +140,6 @@ export function useProducts() {
     try {
       setError(null)
       
-      console.log('Deleting product:', id)
       
       const response = await fetch(`/api/products/delete?id=${id}`, {
         method: 'DELETE',
@@ -156,7 +151,6 @@ export function useProducts() {
         throw new Error(result.error || 'Error al eliminar el producto')
       }
 
-      console.log('Product deleted successfully')
 
       // Remover de la lista de productos
       setProducts(prev => prev.filter(product => product.id !== id))

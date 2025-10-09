@@ -19,7 +19,6 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'Product ID is required' }, { status: 400 })
     }
     
-    console.log('Updating product:', id, updates)
     
     const { data, error } = await supabaseAdmin
       .from('products')
@@ -29,14 +28,11 @@ export async function PUT(request: NextRequest) {
       .single()
 
     if (error) {
-      console.error('Supabase error:', error)
       return NextResponse.json({ error: error.message }, { status: 400 })
     }
 
-    console.log('Product updated successfully:', data)
     return NextResponse.json({ data, error: null })
   } catch (error: any) {
-    console.error('Error updating product:', error)
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
 }

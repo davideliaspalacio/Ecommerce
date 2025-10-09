@@ -314,7 +314,6 @@ export default function AdminProducts() {
 
     try {
       if (editingProduct) {
-        console.log('Updating product:', editingProduct, formData);
         const result = await updateProduct(editingProduct, formData);
         if (result.error) {
           console.error('Error updating product:', result.error);
@@ -323,14 +322,12 @@ export default function AdminProducts() {
         }
         setEditingProduct(null);
       } else {
-        console.log('Creating product:', formData);
         const result = await createProduct(formData);
         if (result.error) {
           console.error('Error creating product:', result.error);
           alert(`Error al crear el producto: ${result.error.message}`);
           return;
         }
-        console.log('Product created successfully:', result.data);
       }
 
       // Reset form
