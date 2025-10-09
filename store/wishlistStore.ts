@@ -59,38 +59,74 @@ export const useWishlistStore = create<WishlistStore>()(
             return false;
           }
 
-          const { data, error } = await supabase
+          // Obtener wishlist actual del usuario
+          const { data: existingWishlist } = await supabase
             .from('wishlist')
-            .insert({
-              user_id: user.id,
-              product_id: product.id
-            })
-            .select(`
-              *,
-              product:products(*)
-            `)
+            .select('products')
+            .eq('user_id', user.id)
             .single();
 
-          if (error) {
-            if (error.code === '23505') { // Unique constraint violation
-              set({ error: 'Este producto ya está en tu lista de favoritos' });
-            } else {
-              set({ error: error.message });
-            }
+          let products = existingWishlist?.products || [];
+          
+          // Verificar si el producto ya existe
+          const productExists = products.some((p: any) => p.id === product.id);
+          if (productExists) {
+            set({ error: 'Este producto ya está en tu lista de favoritos', isLoading: false });
             return false;
           }
 
-          // Agregar a la lista local
-          const newItem: WishlistWithProductType = {
-            wishlist_id: data.id,
-            user_id: data.user_id,
-            added_at: data.created_at,
-            updated_at: data.updated_at,
-            ...data.product
+          // Agregar producto al array
+          const productToAdd = {
+            id: product.id,
+            name: product.name,
+            price: product.price,
+            original_price: product.original_price,
+            discount_percentage: product.discount_percentage,
+            is_on_discount: product.is_on_discount,
+            discount_start_date: product.discount_start_date,
+            discount_end_date: product.discount_end_date,
+            image: product.image,
+            image_back: product.image_back,
+            category: product.category,
+            gender: product.gender,
+            description: product.description,
+            specifications: product.specifications,
+            sizes: product.sizes,
+            sku: product.sku,
+            stock_quantity: product.stock_quantity,
+            status: product.status,
+            tags: product.tags,
+            created_at: product.created_at,
+            updated_at: product.updated_at,
+            added_at: new Date().toISOString()
           };
 
+          products.push(productToAdd);
+
+          // Actualizar o crear wishlist
+          const { error } = await supabase
+            .from('wishlist')
+            .upsert({
+              user_id: user.id,
+              products: products,
+              created_by_name: user.user_metadata?.full_name || user.email,
+              created_by_email: user.email
+            }, {
+              onConflict: 'user_id'
+            });
+
+          if (error) {
+            set({ error: error.message });
+            return false;
+          }
+
+          // Actualizar estado local
           set(state => ({
-            wishlist: [...state.wishlist, newItem],
+            wishlist: products.map((p: any) => ({ 
+              ...p, 
+              wishlist_id: 'single', 
+              user_id: user.id 
+            })),
             isLoading: false
           }));
 
@@ -115,20 +151,39 @@ export const useWishlistStore = create<WishlistStore>()(
             return false;
           }
 
+          // Obtener wishlist actual
+          const { data: existingWishlist } = await supabase
+            .from('wishlist')
+            .select('products')
+            .eq('user_id', user.id)
+            .single();
+
+          if (!existingWishlist) {
+            set({ error: 'No se encontró el wishlist', isLoading: false });
+            return false;
+          }
+
+          // Filtrar producto del array
+          const products = existingWishlist.products.filter((p: any) => p.id !== productId);
+
+          // Actualizar wishlist
           const { error } = await supabase
             .from('wishlist')
-            .delete()
-            .eq('user_id', user.id)
-            .eq('product_id', productId);
+            .update({ products: products })
+            .eq('user_id', user.id);
 
           if (error) {
             set({ error: error.message });
             return false;
           }
 
-          // Remover de la lista local
+          // Actualizar estado local
           set(state => ({
-            wishlist: state.wishlist.filter(item => item.id !== productId),
+            wishlist: products.map((p: any) => ({ 
+              ...p, 
+              wishlist_id: 'single', 
+              user_id: user.id 
+            })),
             isLoading: false
           }));
 
@@ -154,18 +209,30 @@ export const useWishlistStore = create<WishlistStore>()(
           }
 
           const { data, error } = await supabase
-            .from('wishlist_with_products')
+            .from('wishlist')
             .select('*')
             .eq('user_id', user.id)
-            .order('added_at', { ascending: false });
+            .single();
 
           if (error) {
+            if (error.code === 'PGRST116') {
+              // No hay wishlist, crear uno vacío
+              set({ wishlist: [], isLoading: false });
+              return;
+            }
             set({ error: error.message, isLoading: false });
             return;
           }
 
+          // Los productos están en el array
+          const products = data.products || [];
+
           set({ 
-            wishlist: data || [], 
+            wishlist: products.map((p: any) => ({ 
+              ...p, 
+              wishlist_id: data.id, 
+              user_id: user.id 
+            })), 
             isLoading: false 
           });
         } catch (error) {
@@ -231,7 +298,6 @@ export const useWishlistStore = create<WishlistStore>()(
               created_by_name: options.created_by_name ?? user.user_metadata?.full_name ?? user.email,
               created_by_email: options.created_by_email ?? user.email,
             })
-            .eq('id', wishlistId)
             .eq('user_id', user.id)
             .select('share_id')
             .single();
@@ -299,11 +365,11 @@ export const useWishlistStore = create<WishlistStore>()(
       // Generar enlace de compartir
       generateShareLink: async (wishlistId: string, user: any) => {
         try {
-          // Obtener el share_id del wishlist directamente (sin verificar usuario)
+          // Obtener el wishlist del usuario
           const { data: wishlistData, error } = await supabase
             .from('wishlist')
             .select('share_id, is_public, share_enabled')
-            .eq('id', wishlistId)
+            .eq('user_id', user.id)
             .single();
 
           if (error || !wishlistData) return null;
@@ -330,52 +396,30 @@ export const useWishlistStore = create<WishlistStore>()(
         try {
           set({ isLoading: true, error: null });
 
-          // Usar la vista wishlist_with_products para obtener datos públicos
-          const { data, error } = await supabase
-            .from('wishlist_with_products')
+          // Obtener wishlist por share_id
+          const { data: wishlistData, error } = await supabase
+            .from('wishlist')
             .select('*')
             .eq('share_id', shareId)
             .eq('is_public', true)
-            .eq('share_enabled', true);
+            .eq('share_enabled', true)
+            .single();
 
           if (error) {
             set({ error: error.message, isLoading: false });
             return false;
           }
 
-          if (!data || data.length === 0) {
+          if (!wishlistData) {
             set({ error: 'Wishlist no encontrado o no es público', isLoading: false });
             return false;
           }
 
-          // Agrupar datos del wishlist y productos
-          const wishlistData = data[0];
-          const products = data.map((item: any) => ({
-            id: item.id,
-            name: item.name,
-            price: item.price,
-            original_price: item.original_price,
-            discount_percentage: item.discount_percentage,
-            is_on_discount: item.is_on_discount,
-            discount_start_date: item.discount_start_date,
-            discount_end_date: item.discount_end_date,
-            image: item.image,
-            image_back: item.image_back,
-            category: item.category,
-            gender: item.gender,
-            description: item.description,
-            specifications: item.specifications,
-            sizes: item.sizes,
-            sku: item.sku,
-            stock_quantity: item.stock_quantity,
-            status: item.status,
-            tags: item.tags,
-            created_at: item.created_at,
-            updated_at: item.updated_at,
-          }));
+          // Los productos están en el array
+          const products = wishlistData.products || [];
 
           const sharedWishlist: SharedWishlistType = {
-            wishlist_id: wishlistData.wishlist_id,
+            wishlist_id: wishlistData.id,
             user_id: wishlistData.user_id,
             share_id: wishlistData.share_id,
             is_public: wishlistData.is_public,
@@ -383,8 +427,8 @@ export const useWishlistStore = create<WishlistStore>()(
             purchase_enabled: wishlistData.purchase_enabled,
             created_by_name: wishlistData.created_by_name,
             created_by_email: wishlistData.created_by_email,
-            added_at: wishlistData.added_at,
-            wishlist_updated_at: wishlistData.wishlist_updated_at,
+            added_at: wishlistData.created_at,
+            wishlist_updated_at: wishlistData.updated_at,
             products,
           };
 

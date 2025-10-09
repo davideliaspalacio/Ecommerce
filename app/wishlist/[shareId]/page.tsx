@@ -7,6 +7,7 @@ import { useWishlistStore } from "@/store/wishlistStore";
 import { useUIStore } from "@/store/uiStore";
 import { useCartStore } from "@/store/cartStore";
 import { getCurrentPrice, getSavingsAmount, isDiscountActive, getDiscountPercentage } from "@/components/types/Product";
+import { ArrowLeft, ShoppingCart } from 'lucide-react';
 
 export default function SharedWishlistPage() {
   const params = useParams();
@@ -162,9 +163,7 @@ export default function SharedWishlistPage() {
                   onClick={handlePurchaseWishlist}
                   className="inline-flex items-center px-6 py-3 bg-[#4a5a3f] text-white font-medium rounded-lg hover:bg-[#3d4a34] transition-colors"
                 >
-                  <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-2.5 5M7 13l2.5 5m6-5v6a2 2 0 01-2 2H9a2 2 0 01-2-2v-6m8 0V9a2 2 0 00-2-2H9a2 2 0 00-2 2v4.01" />
-                  </svg>
+                  <ShoppingCart className="w-4 h-4 mr-2" />
                   Comprar Wishlist
                 </button>
               )}
@@ -172,9 +171,7 @@ export default function SharedWishlistPage() {
                 href="/"
                 className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors"
               >
-                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                </svg>
+                <ArrowLeft className="w-4 h-4 mr-2" />
                 Volver al inicio
               </a>
             </div>
