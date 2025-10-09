@@ -7,7 +7,6 @@ export function useProducts() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  // Obtener todos los productos activos
   const fetchProducts = async (filters?: ProductFilters) => {
     try {
       setLoading(true)
@@ -19,7 +18,6 @@ export function useProducts() {
         .eq('status', 'active')
         .order('created_at', { ascending: false })
 
-      // Aplicar filtros
       if (filters?.category) {
         query = query.eq('category', filters.category)
       }

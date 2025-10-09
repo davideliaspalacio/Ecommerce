@@ -1,13 +1,18 @@
 import Image from "next/image";
 import ProductModal from "./productModal";
+import ProductFilters from "./ProductFilters";
+import { ProductSkeletonGrid } from "./ProductSkeleton";
+import FilterLoadingAnimation from "./FilterLoadingAnimation";
 import { useUIStore } from "@/store/uiStore";
 import { useProductsContext } from "@/contexts/ProductsContext";
+import { useFilteredProducts } from "@/hooks/useFilteredProducts";
 import { useProductUrl } from "@/hooks/useProductUrl";
 
 export default function ProductsCards() {
   const { genderFilter, setGenderFilter, selectedProduct, setSelectedProduct, setSelectedSize, setCurrentImageIndex } = useUIStore();
-  const { products, loading, error, fetchProducts, fetchProductsByGender } = useProductsContext();
+  const { loading, error, fetchProducts, fetchProductsByGender } = useProductsContext();
   const { openProductFromUrl, generateProductUrl } = useProductUrl();
+  const { filteredProducts, isFiltering } = useFilteredProducts();
 
   const handleProductClick = (product: any) => {
     setSelectedProduct(product);
@@ -63,35 +68,42 @@ export default function ProductsCards() {
               </button>
             </div>
           </div>
-          {loading ? (
-            <div className="flex justify-center items-center py-16">
-              <div className="w-8 h-8 border-4 border-gray-300 border-t-black rounded-full animate-spin"></div>
+          
+          <ProductFilters />
+          
+          {!loading && !error && !isFiltering && (
+            <div className="mb-4">
+              <p className="text-sm text-gray-600">
+                Mostrando {filteredProducts.length} producto{filteredProducts.length !== 1 ? 's' : ''}
+              </p>
             </div>
+          )}
+          
+          {loading ? (
+            <ProductSkeletonGrid count={8} />
           ) : error ? (
             <div className="text-center py-16">
               <p className="text-red-600">Error al cargar los productos: {error}</p>
             </div>
+          ) : isFiltering ? (
+            <FilterLoadingAnimation />
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              {products
-                .filter((p) =>
-                  genderFilter === "TODOS" ? true : p.gender === genderFilter
-                )
-                .map((product) => (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 animate-fadeIn">
+              {filteredProducts.map((product, index) => (
                 <article
                   key={product.id}
-                  className="pointer pt3 pb4 flex flex-column h-100 group cursor-pointer"
+                  className="pointer pt3 pb4 flex flex-column h-100 group cursor-pointer animate-fadeIn"
+                  style={{ animationDelay: `${index * 0.1}s` }}
                   onClick={() => handleProductClick(product)}
                 >
                   <div className="relative mb-4">
-                    <div className="dib relative hoverEffect">
+                    <div className="dib relative hoverEffect w-full h-80 overflow-hidden">
                       <Image
                         src={product.image || "/placeholder.svg"}
                         alt={product.name}
                         width={500}
                         height={748}
-                        className="w-100 h-100 object-contain transition-opacity duration-300 group-hover:opacity-0"
-                        style={{ maxHeight: "unset", maxWidth: "500px" }}
+                        className="w-full h-full object-cover transition-opacity duration-300 group-hover:opacity-0"
                       />
                       <Image
                         src={
@@ -102,8 +114,7 @@ export default function ProductsCards() {
                         alt={product.name}
                         width={500}
                         height={748}
-                        className="w-100 h-100 absolute top-0 left-0 z-10 object-contain opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-                        style={{ maxHeight: "unset", maxWidth: "500px" }}
+                        className="w-full h-full absolute top-0 left-0 z-10 object-cover opacity-0 group-hover:opacity-100 transition-opacity duration-300"
                       />
                     </div>
                   </div>

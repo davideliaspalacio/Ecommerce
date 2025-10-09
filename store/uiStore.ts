@@ -10,6 +10,15 @@ interface UIStore {
   selectedProduct: any | null;
   selectedSize: string;
   currentImageIndex: number;
+  
+  // Filtros avanzados
+  selectedCategories: string[];
+  selectedPriceRange: { min: number; max: number } | null;
+  showFilters: boolean;
+  
+  // Filtros aplicados (los que realmente se usan para filtrar)
+  appliedCategories: string[];
+  appliedPriceRange: { min: number; max: number } | null;
 
   // Acciones de menú móvil
   openMobileMenu: () => void;
@@ -26,6 +35,13 @@ interface UIStore {
 
   // Acciones de filtros
   setGenderFilter: (filter: "TODOS" | "HOMBRE" | "MUJER") => void;
+  setSelectedCategories: (categories: string[]) => void;
+  setSelectedPriceRange: (range: { min: number; max: number } | null) => void;
+  toggleCategory: (category: string) => void;
+  toggleFilters: () => void;
+  clearAllFilters: () => void;
+  applyFilters: () => void;
+  resetSelectedFilters: () => void;
 
   // Acciones de producto seleccionado
   setSelectedProduct: (product: any | null) => void;
@@ -46,6 +62,11 @@ export const useUIStore = create<UIStore>((set) => ({
   selectedProduct: null,
   selectedSize: "",
   currentImageIndex: 0,
+  selectedCategories: [],
+  selectedPriceRange: null,
+  showFilters: false,
+  appliedCategories: [],
+  appliedPriceRange: null,
 
   // Menú móvil
   openMobileMenu: () => set({ isMobileMenuOpen: true }),
@@ -62,6 +83,29 @@ export const useUIStore = create<UIStore>((set) => ({
 
   // Filtros
   setGenderFilter: (filter) => set({ genderFilter: filter }),
+  setSelectedCategories: (categories) => set({ selectedCategories: categories }),
+  setSelectedPriceRange: (range) => set({ selectedPriceRange: range }),
+  toggleCategory: (category) => set((state) => ({
+    selectedCategories: state.selectedCategories.includes(category)
+      ? state.selectedCategories.filter(c => c !== category)
+      : [...state.selectedCategories, category]
+  })),
+  toggleFilters: () => set((state) => ({ showFilters: !state.showFilters })),
+  clearAllFilters: () => set({
+    selectedCategories: [],
+    selectedPriceRange: null,
+    appliedCategories: [],
+    appliedPriceRange: null,
+    genderFilter: "TODOS"
+  }),
+  applyFilters: () => set((state) => ({
+    appliedCategories: [...state.selectedCategories],
+    appliedPriceRange: state.selectedPriceRange
+  })),
+  resetSelectedFilters: () => set((state) => ({
+    selectedCategories: [...state.appliedCategories],
+    selectedPriceRange: state.appliedPriceRange
+  })),
 
   // Producto seleccionado
   setSelectedProduct: (product) => set({ selectedProduct: product }),
@@ -78,5 +122,10 @@ export const useUIStore = create<UIStore>((set) => ({
     selectedProduct: null,
     selectedSize: "",
     currentImageIndex: 0,
+    selectedCategories: [],
+    selectedPriceRange: null,
+    showFilters: false,
+    appliedCategories: [],
+    appliedPriceRange: null,
   }),
 }));

@@ -10,6 +10,7 @@ export default function ProductModal() {
     const { copyProductLink } = useProductUrl()
     const [isProductModalClosing, setIsProductModalClosing] = useState(false)
     const [showAbout, setShowAbout] = useState(false)
+    const [showDeliveryInfo, setShowDeliveryInfo] = useState(true)
     const [isCopyingLink, setIsCopyingLink] = useState(false)
     
     const handleAddToCart = () => {
@@ -104,6 +105,7 @@ export default function ProductModal() {
               className="object-cover"
             />
           </div>
+          
           <div className={`grid gap-4 ${selectedProduct.image_back ? 'grid-cols-2' : 'grid-cols-1'}`}>
             {selectedProduct.image_back && (
               <button
@@ -118,6 +120,22 @@ export default function ProductModal() {
                   fill
                   className="object-cover"
                 />
+              </button>
+            )}
+            {selectedProduct.image && (
+              <button
+                onClick={() => setCurrentImageIndex(0)}
+                className={`relative aspect-square bg-gray-100 border-2 width-[50%] ${
+                  currentImageIndex === 1 ? "border-black" : "border-transparent"
+                }`}
+              >
+                <Image
+                  src={selectedProduct.image}
+                  alt="Espalda"
+                  fill
+                  className="object-cover"
+                />
+                
               </button>
             )}
 
@@ -207,6 +225,39 @@ export default function ProductModal() {
                     {selectedProduct.specifications.map((spec: string, index: number) => (
                       <li key={index}>• {spec}</li>
                     ))}
+                  </ul>
+                </div>
+              </div>
+            )}
+          </div>
+          <div className="border-t pt-4">
+            <button
+              onClick={() => setShowDeliveryInfo(!showDeliveryInfo)}
+              className="w-full flex items-center justify-between py-2 font-medium cursor-pointer"
+            >
+              <span>ENVÍO, CAMBIOS Y DEVOLUCIONES</span>
+              <svg
+                className={`w-5 h-5 transition-transform ${showDeliveryInfo ? "rotate-180" : ""}`}
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+
+            {!showDeliveryInfo && (
+              <div className="pt-4 space-y-4 text-sm text-gray-700">
+                <div>
+                  <ul className="space-y-1">
+                    <li>• Envío a todo Colombia</li>
+                    <li>• Cambios y devoluciones en 30 días</li>
+                    <li>• Garantía de 1 año</li>
+                    <li>• Devoluciones gratis</li>
+                    <li>• Cambios gratis</li>
+                    <li>• Garantía de 1 año</li>
+                    <li>• Devoluciones gratis</li>
+                    <li>• Cambios gratis</li>
                   </ul>
                 </div>
               </div>
