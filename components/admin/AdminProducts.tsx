@@ -304,8 +304,21 @@ export default function AdminProducts() {
       }
       
       if (formData.discount_start_date && formData.discount_end_date) {
-        if (new Date(formData.discount_start_date) >= new Date(formData.discount_end_date)) {
+        const startDate = new Date(formData.discount_start_date);
+        const endDate = new Date(formData.discount_end_date);
+        
+        if (startDate >= endDate) {
           alert('La fecha de fin debe ser posterior a la fecha de inicio');
+          setIsSubmitting(false);
+          return;
+        }
+        
+        // Validar que la duración mínima sea de al menos 1 minuto
+        const diffMs = endDate.getTime() - startDate.getTime();
+        const diffMinutes = Math.floor(diffMs / (1000 * 60));
+        
+        if (diffMinutes < 1) {
+          alert('La duración del descuento debe ser de al menos 1 minuto');
           setIsSubmitting(false);
           return;
         }
@@ -654,25 +667,45 @@ export default function AdminProducts() {
                     
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Fecha de Inicio (opcional)
+                        Fecha y Hora de Inicio (opcional)
                       </label>
                       <div className="space-y-2">
-                        <input
-                          type="date"
-                          value={formData.discount_start_date ? formData.discount_start_date.split('T')[0] : ""}
-                          onChange={(e) => {
-                            const dateValue = e.target.value;
-                            const currentTime = new Date().toTimeString().slice(0, 5);
-                            const fullDateTime = dateValue ? `${dateValue}T${currentTime}` : undefined;
-                            setFormData({
-                              ...formData,
-                              discount_start_date: fullDateTime,
-                            });
-                          }}
-                          min={new Date().toISOString().split('T')[0]}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#4a5a3f] cursor-pointer"
-                        />
-                        <div className="flex gap-2">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                          <input
+                            type="date"
+                            value={formData.discount_start_date ? formData.discount_start_date.split('T')[0] : ""}
+                            onChange={(e) => {
+                              const dateValue = e.target.value;
+                              const currentTime = formData.discount_start_date ? 
+                                formData.discount_start_date.split('T')[1] : 
+                                new Date().toTimeString().slice(0, 5);
+                              const fullDateTime = dateValue ? `${dateValue}T${currentTime}` : undefined;
+                              setFormData({
+                                ...formData,
+                                discount_start_date: fullDateTime,
+                              });
+                            }}
+                            min={new Date().toISOString().split('T')[0]}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#4a5a3f] cursor-pointer"
+                          />
+                          <input
+                            type="time"
+                            value={formData.discount_start_date ? formData.discount_start_date.split('T')[1] : ""}
+                            onChange={(e) => {
+                              const timeValue = e.target.value;
+                              const currentDate = formData.discount_start_date ? 
+                                formData.discount_start_date.split('T')[0] : 
+                                new Date().toISOString().split('T')[0];
+                              const fullDateTime = timeValue ? `${currentDate}T${timeValue}` : undefined;
+                              setFormData({
+                                ...formData,
+                                discount_start_date: fullDateTime,
+                              });
+                            }}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#4a5a3f] cursor-pointer"
+                          />
+                        </div>
+                        <div className="flex flex-wrap gap-2">
                           <button
                             type="button"
                             onClick={() => {
@@ -687,6 +720,62 @@ export default function AdminProducts() {
                             className="px-3 py-1 text-xs bg-blue-100 text-blue-700 rounded-md hover:bg-blue-200 transition-colors cursor-pointer date-quick-btn"
                           >
                             ⏰ Ahora
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const in5Min = new Date();
+                              in5Min.setMinutes(in5Min.getMinutes() + 5);
+                              setFormData({
+                                ...formData,
+                                discount_start_date: in5Min.toISOString().slice(0, 16),
+                              });
+                            }}
+                            className="px-3 py-1 text-xs bg-purple-100 text-purple-700 rounded-md hover:bg-purple-200 transition-colors cursor-pointer date-quick-btn"
+                          >
+                            ⏱️ +5 min
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const in15Min = new Date();
+                              in15Min.setMinutes(in15Min.getMinutes() + 15);
+                              setFormData({
+                                ...formData,
+                                discount_start_date: in15Min.toISOString().slice(0, 16),
+                              });
+                            }}
+                            className="px-3 py-1 text-xs bg-indigo-100 text-indigo-700 rounded-md hover:bg-indigo-200 transition-colors cursor-pointer date-quick-btn"
+                          >
+                            ⏱️ +15 min
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const in30Min = new Date();
+                              in30Min.setMinutes(in30Min.getMinutes() + 30);
+                              setFormData({
+                                ...formData,
+                                discount_start_date: in30Min.toISOString().slice(0, 16),
+                              });
+                            }}
+                            className="px-3 py-1 text-xs bg-cyan-100 text-cyan-700 rounded-md hover:bg-cyan-200 transition-colors cursor-pointer date-quick-btn"
+                          >
+                            ⏱️ +30 min
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const in1Hour = new Date();
+                              in1Hour.setHours(in1Hour.getHours() + 1);
+                              setFormData({
+                                ...formData,
+                                discount_start_date: in1Hour.toISOString().slice(0, 16),
+                              });
+                            }}
+                            className="px-3 py-1 text-xs bg-teal-100 text-teal-700 rounded-md hover:bg-teal-200 transition-colors cursor-pointer date-quick-btn"
+                          >
+                            ⏰ +1 hora
                           </button>
                           <button
                             type="button"
@@ -733,25 +822,101 @@ export default function AdminProducts() {
                     
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Fecha de Fin (opcional)
+                        Fecha y Hora de Fin (opcional)
                       </label>
                       <div className="space-y-2">
-                        <input
-                          type="date"
-                          value={formData.discount_end_date ? formData.discount_end_date.split('T')[0] : ""}
-                          onChange={(e) => {
-                            const dateValue = e.target.value;
-                            const currentTime = new Date().toTimeString().slice(0, 5);
-                            const fullDateTime = dateValue ? `${dateValue}T${currentTime}` : undefined;
-                            setFormData({
-                              ...formData,
-                              discount_end_date: fullDateTime,
-                            });
-                          }}
-                          min={formData.discount_start_date ? formData.discount_start_date.split('T')[0] : new Date().toISOString().split('T')[0]}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#4a5a3f] cursor-pointer"
-                        />
-                        <div className="flex gap-2">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                          <input
+                            type="date"
+                            value={formData.discount_end_date ? formData.discount_end_date.split('T')[0] : ""}
+                            onChange={(e) => {
+                              const dateValue = e.target.value;
+                              const currentTime = formData.discount_end_date ? 
+                                formData.discount_end_date.split('T')[1] : 
+                                new Date().toTimeString().slice(0, 5);
+                              const fullDateTime = dateValue ? `${dateValue}T${currentTime}` : undefined;
+                              setFormData({
+                                ...formData,
+                                discount_end_date: fullDateTime,
+                              });
+                            }}
+                            min={formData.discount_start_date ? formData.discount_start_date.split('T')[0] : new Date().toISOString().split('T')[0]}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#4a5a3f] cursor-pointer"
+                          />
+                          <input
+                            type="time"
+                            value={formData.discount_end_date ? formData.discount_end_date.split('T')[1] : ""}
+                            onChange={(e) => {
+                              const timeValue = e.target.value;
+                              const currentDate = formData.discount_end_date ? 
+                                formData.discount_end_date.split('T')[0] : 
+                                new Date().toISOString().split('T')[0];
+                              const fullDateTime = timeValue ? `${currentDate}T${timeValue}` : undefined;
+                              setFormData({
+                                ...formData,
+                                discount_end_date: fullDateTime,
+                              });
+                            }}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#4a5a3f] cursor-pointer"
+                          />
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const in15Min = new Date();
+                              in15Min.setMinutes(in15Min.getMinutes() + 15);
+                              setFormData({
+                                ...formData,
+                                discount_end_date: in15Min.toISOString().slice(0, 16),
+                              });
+                            }}
+                            className="px-3 py-1 text-xs bg-purple-100 text-purple-700 rounded-md hover:bg-purple-200 transition-colors cursor-pointer date-quick-btn"
+                          >
+                            ⏱️ +15 min
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const in30Min = new Date();
+                              in30Min.setMinutes(in30Min.getMinutes() + 30);
+                              setFormData({
+                                ...formData,
+                                discount_end_date: in30Min.toISOString().slice(0, 16),
+                              });
+                            }}
+                            className="px-3 py-1 text-xs bg-indigo-100 text-indigo-700 rounded-md hover:bg-indigo-200 transition-colors cursor-pointer date-quick-btn"
+                          >
+                            ⏱️ +30 min
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const in1Hour = new Date();
+                              in1Hour.setHours(in1Hour.getHours() + 1);
+                              setFormData({
+                                ...formData,
+                                discount_end_date: in1Hour.toISOString().slice(0, 16),
+                              });
+                            }}
+                            className="px-3 py-1 text-xs bg-teal-100 text-teal-700 rounded-md hover:bg-teal-200 transition-colors cursor-pointer date-quick-btn"
+                          >
+                            ⏰ +1 hora
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const in2Hours = new Date();
+                              in2Hours.setHours(in2Hours.getHours() + 2);
+                              setFormData({
+                                ...formData,
+                                discount_end_date: in2Hours.toISOString().slice(0, 16),
+                              });
+                            }}
+                            className="px-3 py-1 text-xs bg-cyan-100 text-cyan-700 rounded-md hover:bg-cyan-200 transition-colors cursor-pointer date-quick-btn"
+                          >
+                            ⏰ +2 horas
+                          </button>
                           <button
                             type="button"
                             onClick={() => {
@@ -764,7 +929,7 @@ export default function AdminProducts() {
                                 discount_end_date: `${date7Days}T${currentTime}`,
                               });
                             }}
-                            className="px-3 py-1 text-xs bg-purple-100 text-purple-700 rounded-md hover:bg-purple-200 transition-colors cursor-pointer date-quick-btn"
+                            className="px-3 py-1 text-xs bg-blue-100 text-blue-700 rounded-md hover:bg-blue-200 transition-colors cursor-pointer date-quick-btn"
                           >
                             📅 +7 días
                           </button>
@@ -849,13 +1014,50 @@ export default function AdminProducts() {
                             <div className="space-y-1 text-xs text-blue-800">
                               <p>
                                 <span className="font-medium">Duración:</span> {
-                                  Math.ceil((new Date(formData.discount_end_date).getTime() - new Date(formData.discount_start_date).getTime()) / (1000 * 60 * 60 * 24))
-                                } días
+                                  (() => {
+                                    const start = new Date(formData.discount_start_date);
+                                    const end = new Date(formData.discount_end_date);
+                                    const diffMs = end.getTime() - start.getTime();
+                                    const diffMinutes = Math.floor(diffMs / (1000 * 60));
+                                    const diffHours = Math.floor(diffMinutes / 60);
+                                    const diffDays = Math.floor(diffHours / 24);
+                                    
+                                    if (diffDays > 0) {
+                                      return `${diffDays} día${diffDays > 1 ? 's' : ''} ${diffHours % 24}h ${diffMinutes % 60}m`;
+                                    } else if (diffHours > 0) {
+                                      return `${diffHours} hora${diffHours > 1 ? 's' : ''} ${diffMinutes % 60}m`;
+                                    } else {
+                                      return `${diffMinutes} minuto${diffMinutes > 1 ? 's' : ''}`;
+                                    }
+                                  })()
+                                }
                               </p>
                               <p>
                                 <span className="font-medium">Estado:</span> {
                                   new Date(formData.discount_start_date) > new Date() ? '🟡 Programado' :
                                   new Date(formData.discount_end_date) < new Date() ? '🔴 Expirado' : '🟢 Activo'
+                                }
+                              </p>
+                              <p>
+                                <span className="font-medium">Inicio:</span> {
+                                  new Date(formData.discount_start_date).toLocaleString('es-CO', {
+                                    year: 'numeric',
+                                    month: 'short',
+                                    day: 'numeric',
+                                    hour: '2-digit',
+                                    minute: '2-digit'
+                                  })
+                                }
+                              </p>
+                              <p>
+                                <span className="font-medium">Fin:</span> {
+                                  new Date(formData.discount_end_date).toLocaleString('es-CO', {
+                                    year: 'numeric',
+                                    month: 'short',
+                                    day: 'numeric',
+                                    hour: '2-digit',
+                                    minute: '2-digit'
+                                  })
                                 }
                               </p>
                               {formData.discount_start_date && formData.discount_end_date && 
@@ -871,55 +1073,136 @@ export default function AdminProducts() {
                         {/* Quick Setup Buttons */}
                         <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg">
                           <h5 className="text-sm font-medium text-gray-700 mb-2">⚡ Configuración Rápida</h5>
-                          <div className="flex flex-wrap gap-2">
-                            <button
-                              type="button"
-                              onClick={() => {
-                                const now = new Date();
-                                const in7Days = new Date();
-                                in7Days.setDate(in7Days.getDate() + 7);
-                                
-                                setFormData({
-                                  ...formData,
-                                  discount_start_date: now.toISOString().slice(0, 16),
-                                  discount_end_date: in7Days.toISOString().slice(0, 16),
-                                });
-                              }}
-                              className="px-3 py-1 text-xs bg-green-100 text-green-700 rounded-md hover:bg-green-200 transition-colors cursor-pointer date-quick-btn"
-                            >
-                              🚀 Iniciar ahora por 7 días
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                const tomorrow = new Date();
-                                tomorrow.setDate(tomorrow.getDate() + 1);
-                                const in30Days = new Date();
-                                in30Days.setDate(in30Days.getDate() + 30);
-                                
-                                setFormData({
-                                  ...formData,
-                                  discount_start_date: tomorrow.toISOString().slice(0, 16),
-                                  discount_end_date: in30Days.toISOString().slice(0, 16),
-                                });
-                              }}
-                              className="px-3 py-1 text-xs bg-blue-100 text-blue-700 rounded-md hover:bg-blue-200 transition-colors cursor-pointer date-quick-btn"
-                            >
-                              📅 Mañana por 30 días
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setFormData({
-                                  ...formData,
-                                  discount_start_date: undefined,
-                                  discount_end_date: undefined,
-                                });
-                              }}
-                              className="px-3 py-1 text-xs bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors cursor-pointer date-quick-btn"
-                            >
-                              🗑️ Limpiar fechas
-                            </button>
+                          <div className="space-y-3">
+                            {/* Promociones por minutos/horas */}
+                            <div>
+                              <p className="text-xs font-medium text-gray-600 mb-2">⏱️ Promociones Cortas:</p>
+                              <div className="flex flex-wrap gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const now = new Date();
+                                    const in15Min = new Date();
+                                    in15Min.setMinutes(in15Min.getMinutes() + 15);
+                                    
+                                    setFormData({
+                                      ...formData,
+                                      discount_start_date: now.toISOString().slice(0, 16),
+                                      discount_end_date: in15Min.toISOString().slice(0, 16),
+                                    });
+                                  }}
+                                  className="px-3 py-1 text-xs bg-purple-100 text-purple-700 rounded-md hover:bg-purple-200 transition-colors cursor-pointer date-quick-btn"
+                                >
+                                  ⚡ Flash: 15 min
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const now = new Date();
+                                    const in30Min = new Date();
+                                    in30Min.setMinutes(in30Min.getMinutes() + 30);
+                                    
+                                    setFormData({
+                                      ...formData,
+                                      discount_start_date: now.toISOString().slice(0, 16),
+                                      discount_end_date: in30Min.toISOString().slice(0, 16),
+                                    });
+                                  }}
+                                  className="px-3 py-1 text-xs bg-indigo-100 text-indigo-700 rounded-md hover:bg-indigo-200 transition-colors cursor-pointer date-quick-btn"
+                                >
+                                  ⚡ Flash: 30 min
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const now = new Date();
+                                    const in1Hour = new Date();
+                                    in1Hour.setHours(in1Hour.getHours() + 1);
+                                    
+                                    setFormData({
+                                      ...formData,
+                                      discount_start_date: now.toISOString().slice(0, 16),
+                                      discount_end_date: in1Hour.toISOString().slice(0, 16),
+                                    });
+                                  }}
+                                  className="px-3 py-1 text-xs bg-teal-100 text-teal-700 rounded-md hover:bg-teal-200 transition-colors cursor-pointer date-quick-btn"
+                                >
+                                  ⚡ Flash: 1 hora
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const now = new Date();
+                                    const in2Hours = new Date();
+                                    in2Hours.setHours(in2Hours.getHours() + 2);
+                                    
+                                    setFormData({
+                                      ...formData,
+                                      discount_start_date: now.toISOString().slice(0, 16),
+                                      discount_end_date: in2Hours.toISOString().slice(0, 16),
+                                    });
+                                  }}
+                                  className="px-3 py-1 text-xs bg-cyan-100 text-cyan-700 rounded-md hover:bg-cyan-200 transition-colors cursor-pointer date-quick-btn"
+                                >
+                                  ⚡ Flash: 2 horas
+                                </button>
+                              </div>
+                            </div>
+                            
+                            {/* Promociones por días */}
+                            <div>
+                              <p className="text-xs font-medium text-gray-600 mb-2">📅 Promociones por Días:</p>
+                              <div className="flex flex-wrap gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const now = new Date();
+                                    const in7Days = new Date();
+                                    in7Days.setDate(in7Days.getDate() + 7);
+                                    
+                                    setFormData({
+                                      ...formData,
+                                      discount_start_date: now.toISOString().slice(0, 16),
+                                      discount_end_date: in7Days.toISOString().slice(0, 16),
+                                    });
+                                  }}
+                                  className="px-3 py-1 text-xs bg-green-100 text-green-700 rounded-md hover:bg-green-200 transition-colors cursor-pointer date-quick-btn"
+                                >
+                                  🚀 Iniciar ahora por 7 días
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const tomorrow = new Date();
+                                    tomorrow.setDate(tomorrow.getDate() + 1);
+                                    const in30Days = new Date();
+                                    in30Days.setDate(in30Days.getDate() + 30);
+                                    
+                                    setFormData({
+                                      ...formData,
+                                      discount_start_date: tomorrow.toISOString().slice(0, 16),
+                                      discount_end_date: in30Days.toISOString().slice(0, 16),
+                                    });
+                                  }}
+                                  className="px-3 py-1 text-xs bg-blue-100 text-blue-700 rounded-md hover:bg-blue-200 transition-colors cursor-pointer date-quick-btn"
+                                >
+                                  📅 Mañana por 30 días
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setFormData({
+                                      ...formData,
+                                      discount_start_date: undefined,
+                                      discount_end_date: undefined,
+                                    });
+                                  }}
+                                  className="px-3 py-1 text-xs bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors cursor-pointer date-quick-btn"
+                                >
+                                  🗑️ Limpiar fechas
+                                </button>
+                              </div>
+                            </div>
                           </div>
                         </div>
                       </div>

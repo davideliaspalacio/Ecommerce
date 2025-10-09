@@ -94,27 +94,16 @@ export const getSavingsAmount = (product: ProductType): number => {
 };
 
 export const isDiscountActive = (product: ProductType): boolean => {
+  // Si discount_active está definido, usar ese valor (para casos especiales)
   if (product.discount_active !== undefined) {
     return product.discount_active;
   }
   
-  if (!product.is_on_discount) {
-    return false;
-  }
-  
-  const now = new Date();
-  const startDate = product.discount_start_date ? new Date(product.discount_start_date) : null;
-  const endDate = product.discount_end_date ? new Date(product.discount_end_date) : null;
-  
-  if (startDate && now < startDate) {
-    return false;
-  }
-  
-  if (endDate && now > endDate) {
-    return false;
-  }
-  
-  return true;
+  // Con el trigger de la base de datos, is_on_discount ya maneja las fechas automáticamente
+  // Solo necesitamos verificar que tenga los datos necesarios para mostrar el descuento
+  return product.is_on_discount === true && 
+         !!product.original_price && 
+         !!product.discount_percentage;
 };
 
 export const getDiscountPercentage = (product: ProductType): number => {

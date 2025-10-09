@@ -235,25 +235,37 @@ export default function SharedWishlistPage() {
                   
                   <div className="mb-3">
                     {isDiscountActive(product) ? (
-                      <>
-                        <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 mb-1">
+                      <div className="flex flex-col gap-1">
+                        <div className="flex items-center gap-2">
                           <span className="text-base sm:text-lg font-bold discount-price">
-                            ${getCurrentPrice(product).toLocaleString("es-CO")}
+                            <span className="text-sm">$</span>
+                            <span className="text-sm">&nbsp;</span>
+                            <span className="text-base sm:text-lg">
+                              {getCurrentPrice(product).toLocaleString("es-CO")}
+                            </span>
                           </span>
-                          <span className="px-2 py-1 discount-badge text-xs font-bold rounded-full self-start">
-                            -{getDiscountPercentage(product)}% OFF
+                          <span className="px-2 py-1 discount-badge text-xs font-bold rounded-full">
+                            -{getDiscountPercentage(product)}%
                           </span>
                         </div>
                         <div className="text-xs sm:text-sm original-price">
-                          ${product.original_price?.toLocaleString("es-CO")}
+                          <span className="text-xs">$</span>
+                          <span className="text-xs">&nbsp;</span>
+                          <span className="text-xs sm:text-sm">
+                            {product.original_price?.toLocaleString("es-CO")}
+                          </span>
                         </div>
                         <div className="text-xs savings-text font-medium">
                           Ahorras: ${getSavingsAmount(product).toLocaleString("es-CO")}
                         </div>
-                      </>
+                      </div>
                     ) : (
                       <span className="text-base sm:text-lg font-medium">
-                        ${getCurrentPrice(product).toLocaleString("es-CO")}
+                        <span className="text-sm">$</span>
+                        <span className="text-sm">&nbsp;</span>
+                        <span className="text-base sm:text-lg">
+                          {getCurrentPrice(product).toLocaleString("es-CO")}
+                        </span>
                       </span>
                     )}
                   </div>
