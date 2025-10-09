@@ -100,16 +100,13 @@ export default function WishlistModal() {
 
   const handleCopyShareLink = async () => {
     if (!shareLink) return;
+    setTimeout(() => {
+      setIsCopied(false);
+    }, 2000);
 
     try {
       await navigator.clipboard.writeText(shareLink);
       setIsCopied(true);
-      
-      // Resetear el estado después de 2 segundos
-      setTimeout(() => {
-        setIsCopied(false);
-        setShowShareModal(false);
-      }, 2000);
     } catch (error) {
       alert('Error al copiar enlace');
     }
@@ -175,34 +172,6 @@ export default function WishlistModal() {
         <div className="flex items-center justify-between p-6 border-b">
           <h2 className="text-xl font-bold">MIS FAVORITOS</h2>
           <div className="flex items-center gap-2">
-            {/* Botón de compartir */}
-            {wishlist.length > 0 && user && (
-              <button
-                onClick={handleShareWishlist}
-                disabled={isSharing}
-                className="w-8 h-8 rounded-full hover:bg-gray-100 flex items-center justify-center transition-colors cursor-pointer disabled:opacity-50"
-                title="Compartir wishlist"
-              >
-                {isSharing ? (
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-600"></div>
-                ) : (
-                  <svg
-                    className="w-5 h-5"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z"
-                    />
-                  </svg>
-                )}
-              </button>
-            )}
-            
             <button
               onClick={handleCloseWishlist}
               className="w-8 h-8 rounded-full hover:bg-gray-100 flex items-center justify-center transition-colors cursor-pointer"
@@ -381,6 +350,39 @@ export default function WishlistModal() {
               {wishlist.length} producto{wishlist.length !== 1 ? 's' : ''} en favoritos
             </div>
             
+            {/* Botón de compartir más grande */}
+            {user && (
+              <button
+                onClick={handleShareWishlist}
+                disabled={isSharing}
+                className="w-full bg-[#4a5a3f] text-white py-3 px-4 font-medium rounded hover:bg-[#3d4a34] transition-colors cursor-pointer disabled:opacity-50 mb-3 flex items-center justify-center gap-2"
+              >
+                {isSharing ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    <span>Compartiendo...</span>
+                  </>
+                ) : (
+                  <>
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z"
+                      />
+                    </svg>
+                    <span>COMPARTIR WISHLIST</span>
+                  </>
+                )}
+              </button>
+            )}
+            
             <button
               onClick={handleCloseWishlist}
               className="w-full border border-gray-300 py-3 font-medium hover:border-black transition-colors cursor-pointer"
@@ -395,7 +397,7 @@ export default function WishlistModal() {
     {/* Modal de compartir */}
     {showShareModal && (
       <div className="fixed inset-0 z-[200] bg-black/50 flex items-center justify-center p-4">
-        <div className="bg-white rounded-lg p-6 max-w-md w-full">
+        <div className="bg-white rounded-1xl p-6 max-w-md w-full">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-bold">Compartir Wishlist</h3>
             <button
@@ -413,49 +415,29 @@ export default function WishlistModal() {
               Comparte tu wishlist con otros usuarios. Ellos podrán ver todos los productos que has guardado.
             </p>
             
-            <div className="bg-gray-50 p-3 rounded-lg">
+            <div className="bg-gray-50 p-3 rounded-1xl">
               <p className="text-xs text-gray-500 mb-1">Enlace de compartir:</p>
               <div className="flex items-center gap-2">
                 <input
                   type="text"
                   value={shareLink || ''}
                   readOnly
-                  className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-md bg-white"
+                  className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-1xl bg-white"
                 />
-                <button
-                  onClick={handleCopyShareLink}
-                  disabled={isCopied}
-                  className={`px-3 py-2 text-sm font-medium rounded transition-colors cursor-pointer ${
-                    isCopied 
-                      ? 'bg-green-500 text-white cursor-not-allowed' 
-                      : 'bg-[#4a5a3f] text-white hover:bg-[#3d4a34]'
-                  }`}
-                >
-                  {isCopied ? (
-                    <div className="flex items-center gap-2">
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                      </svg>
-                      ¡Copiado!
-                    </div>
-                  ) : (
-                    'Copiar'
-                  )}
-                </button>
               </div>
             </div>
             
             <div className="flex gap-3">
               <button
                 onClick={() => setShowShareModal(false)}
-                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded hover:bg-gray-50 transition-colors cursor-pointer"
+                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-1xl hover:bg-gray-50 transition-colors cursor-pointer"
               >
                 Cerrar
               </button>
               <button
                 onClick={handleCopyShareLink}
                 disabled={isCopied}
-                className={`flex-1 px-4 py-2 rounded transition-colors cursor-pointer ${
+                className={`flex-1 px-4 py-2 rounded-1xl transition-colors cursor-pointer ${
                   isCopied 
                     ? 'bg-green-500 text-white cursor-not-allowed' 
                     : 'bg-[#4a5a3f] text-white hover:bg-[#3d4a34]'
@@ -469,7 +451,7 @@ export default function WishlistModal() {
                     ¡Copiado!
                   </div>
                 ) : (
-                  'Copiar y Cerrar'
+                  'Copiar '
                 )}
               </button>
             </div>

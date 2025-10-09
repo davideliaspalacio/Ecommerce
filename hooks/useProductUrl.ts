@@ -68,8 +68,10 @@ export function useProductUrl() {
     loadedProductIdRef.current = null
     
     const currentUrl = new URL(window.location.href)
-    currentUrl.searchParams.delete('product')
-    router.replace(currentUrl.pathname + currentUrl.search)
+    if (currentUrl.searchParams.has('product')) {
+      currentUrl.searchParams.delete('product')
+      router.replace(currentUrl.pathname + currentUrl.search)
+    }
   }
 
   useEffect(() => {

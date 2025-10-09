@@ -137,8 +137,8 @@ export default function ProductsCards() {
                     {/* Botón de Wishlist */}
                     <button
                       onClick={(e) => handleWishlistToggle(e, product)}
-                      disabled={isLoading}
-                      className={`absolute top-3 right-3 w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 z-20 ${
+                      disabled={isLoading} 
+                      className={`absolute top-3 right-3 w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 z-20 cursor-pointer ${
                         isInWishlist(product.id)
                           ? 'bg-red-500 text-white hover:bg-red-600 scale-110'
                           : 'bg-white/80 text-gray-600 hover:bg-white hover:text-red-500'

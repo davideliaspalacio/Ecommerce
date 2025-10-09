@@ -10,7 +10,7 @@ import { useAuthContext } from "@/contexts/AuthContext"
 export default function ProductModal() {
     const { selectedProduct, selectedSize, currentImageIndex, setSelectedProduct, setSelectedSize, setCurrentImageIndex, openAuthModal } = useUIStore()
     const { addToCart, openCart } = useCartStore()
-    const { copyProductLink } = useProductUrl()
+    const { copyProductLink, closeProductAndClearUrl } = useProductUrl()
     const { isInWishlist, toggleWishlist, isLoading } = useWishlistStore()
     const { user } = useAuthContext()
     const [isProductModalClosing, setIsProductModalClosing] = useState(false)
@@ -56,9 +56,7 @@ export default function ProductModal() {
 
     const closeProductModal = () => {
         setIsProductModalClosing(true)
-        setSelectedProduct(null)
-        setSelectedSize("")
-        setCurrentImageIndex(0)
+        closeProductAndClearUrl()
         setTimeout(() => {
           setIsProductModalClosing(false)
         }, 300) 
@@ -70,13 +68,13 @@ export default function ProductModal() {
     <div className={`fixed inset-0 z-[100] bg-black/50 flex items-center justify-center p-4 ${isProductModalClosing ? 'animate-fade-out' : 'animate-fade-in'}`} onClick={closeProductModal}>
     <div className={`bg-white w-full max-w-6xl max-h-[90vh] overflow-y-auto relative ${isProductModalClosing ? 'animate-scale-out' : 'animate-scale-in'}`} onClick={(e) => e.stopPropagation()}>
       {/* Banner Premium */}
-      <div className="bg-[#4a5a3f] text-white px-6 py-3 flex items-center justify-between sticky top-0 z-10">
-        <p className="text-sm">TELA PREMIUM | Una vez la tocas, notarás la diferencia</p>
-        <div className="flex items-center gap-3">
+      <div className="bg-[#4a5a3f] text-white px-3 sm:px-6 py-3 flex flex-col sm:flex-row items-start sm:items-center justify-between sticky top-0 z-10 gap-3 sm:gap-0">
+        <p className="text-xs sm:text-sm text-center sm:text-left flex-1 sm:flex-none">TELA PREMIUM | Una vez la tocas, notarás la diferencia</p>
+        <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto justify-center sm:justify-end">
           <button
             onClick={handleCopyLink}
             disabled={isCopyingLink}
-            className={`flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium transition-all ${
+            className={`flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1 rounded-full text-xs font-medium transition-all ${
               isCopyingLink 
                 ? ' bg-white/20 cursor-not-allowed' 
                 : 'bg-white/20 hover:bg-white/30 cursor-pointer'
@@ -87,14 +85,16 @@ export default function ProductModal() {
                 <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
-                ¡Copiado!
+                <span className="hidden sm:inline">¡Copiado!</span>
+                <span className="sm:hidden">¡OK!</span>
               </>
             ) : (
               <>
                 <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z" />
                 </svg>
-                Compartir Producto
+                <span className="hidden sm:inline">Compartir Producto</span>
+                <span className="sm:hidden">Compartir</span>
               </>
             )}
           </button>
@@ -103,14 +103,14 @@ export default function ProductModal() {
           <button
             onClick={handleWishlistToggle}
             disabled={isLoading}
-            className={`w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300 ${
+            className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center transition-all duration-300 ${
               isInWishlist(selectedProduct?.id || '')
                 ? 'bg-red-500 text-white hover:bg-red-600'
                 : 'bg-white/20 text-white hover:bg-white/30'
             } ${isLoading ? 'opacity-50 cursor-not-allowed' : 'hover:scale-110'}`}
           >
             <svg
-              className={`w-4 h-4 transition-all duration-300 ${
+              className={`w-3.5 h-3.5 sm:w-4 sm:h-4 transition-all duration-300 ${
                 isInWishlist(selectedProduct?.id || '') ? 'fill-current' : 'stroke-current'
               }`}
               fill={isInWishlist(selectedProduct?.id || '') ? 'currentColor' : 'none'}
@@ -128,7 +128,7 @@ export default function ProductModal() {
           
           <button
             onClick={closeProductModal}
-            className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center hover:bg-white/30 transition-colors cursor-pointer"
+            className="w-6 h-6 sm:w-6 sm:h-6 rounded-full bg-white/20 flex items-center justify-center hover:bg-white/30 transition-colors cursor-pointer"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -348,7 +348,7 @@ export default function ProductModal() {
                       <span className="font-semibold text-red-600"> treinta (30) días</span> desde la fecha de entrega de tu orden. 
                       En este plazo usted debe hacer llegar su solicitud de cambio en el siguiente correo:
                     </p>
-                    <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+                    <div className="bg-gray-50 border border-gray-200 rounded-xl p-3">
                       <a 
                         href="mailto:enough.dmd@gmail.com" 
                         className="text-[#4a5a3f] hover:text-[#3d4a34] font-medium transition-colors"
