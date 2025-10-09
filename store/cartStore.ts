@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { CartItemType } from '@/components/types/CartItem';
-import { ProductType } from '@/components/types/Product';
+import { ProductType, getCurrentPrice } from '@/components/types/Product';
 
 interface CartStore {
   // Estado
@@ -24,6 +24,7 @@ interface CartStore {
   getTotal: () => number;
   getItemCount: () => number;
   isInCart: (productId: string, size: string) => boolean;
+  getItemPrice: (product: ProductType) => number;
 }
 
 export const useCartStore = create<CartStore>()(
@@ -113,7 +114,8 @@ export const useCartStore = create<CartStore>()(
       // Calcular total
       getTotal: () => {
         return get().cart.reduce((total, item) => {
-          return total + (item.product.price * item.quantity);
+          const finalPrice = getCurrentPrice(item.product);
+          return total + (finalPrice * item.quantity);
         }, 0);
       },
 
@@ -127,6 +129,11 @@ export const useCartStore = create<CartStore>()(
         return get().cart.some(
           item => item.product.id === productId && item.size === size
         );
+      },
+
+      // Obtener precio final de un producto
+      getItemPrice: (product) => {
+        return getCurrentPrice(product);
       },
     }),
     {

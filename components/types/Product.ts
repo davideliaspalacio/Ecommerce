@@ -2,6 +2,14 @@ export interface ProductType {
     id: string;
     name: string;
     price: number;
+    original_price?: number;
+    discount_percentage?: number;
+    is_on_discount?: boolean;
+    discount_start_date?: string;
+    discount_end_date?: string;
+    current_price?: number;
+    savings_amount?: number;
+    discount_active?: boolean;
     image: string;
     image_back?: string;
     category: 'CAMISETA' | 'SUDADERA' | 'TOP' | 'JEAN' | 'JOGGER' | 'GORRA' | 'ACCESORIO';
@@ -28,6 +36,11 @@ export interface ProductType {
 export interface CreateProductType {
     name: string;
     price: number;
+    original_price?: number;
+    discount_percentage?: number;
+    is_on_discount?: boolean;
+    discount_start_date?: string;
+    discount_end_date?: string;
     image: string;
     image_back?: string;
     category: 'CAMISETA' | 'SUDADERA' | 'TOP' | 'JEAN' | 'JOGGER' | 'GORRA' | 'ACCESORIO';
@@ -55,3 +68,64 @@ export interface ProductFilters {
     max_price?: number;
     search?: string;
   }
+
+export const getCurrentPrice = (product: ProductType): number => {
+  if (product.current_price !== undefined) {
+    return product.current_price;
+  }
+  
+  if (product.is_on_discount && product.original_price && product.discount_percentage) {
+    return product.original_price * (1 - product.discount_percentage / 100);
+  }
+  
+  return product.price;
+};
+
+export const getSavingsAmount = (product: ProductType): number => {
+  if (product.savings_amount !== undefined) {
+    return product.savings_amount;
+  }
+  
+  if (product.is_on_discount && product.original_price) {
+    return product.original_price - getCurrentPrice(product);
+  }
+  
+  return 0;
+};
+
+export const isDiscountActive = (product: ProductType): boolean => {
+  if (product.discount_active !== undefined) {
+    return product.discount_active;
+  }
+  
+  if (!product.is_on_discount) {
+    return false;
+  }
+  
+  const now = new Date();
+  const startDate = product.discount_start_date ? new Date(product.discount_start_date) : null;
+  const endDate = product.discount_end_date ? new Date(product.discount_end_date) : null;
+  
+  if (startDate && now < startDate) {
+    return false;
+  }
+  
+  if (endDate && now > endDate) {
+    return false;
+  }
+  
+  return true;
+};
+
+export const getDiscountPercentage = (product: ProductType): number => {
+  if (product.discount_percentage) {
+    return product.discount_percentage;
+  }
+  
+  if (product.is_on_discount && product.original_price) {
+    const currentPrice = getCurrentPrice(product);
+    return Math.round(((product.original_price - currentPrice) / product.original_price) * 100);
+  }
+  
+  return 0;
+};

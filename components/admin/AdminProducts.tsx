@@ -16,6 +16,7 @@ export default function AdminProducts() {
   const [editingProduct, setEditingProduct] = useState<string | null>(null);
   const [newTag, setNewTag] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [discountFilter, setDiscountFilter] = useState<string>("all");
   const [imageType, setImageType] = useState<'url' | 'upload'>('url');
   const [imageBackType, setImageBackType] = useState<'url' | 'upload'>('url');
   const [uploadingImage, setUploadingImage] = useState(false);
@@ -41,6 +42,11 @@ export default function AdminProducts() {
     weight: undefined,
     dimensions: undefined,
     tags: [],
+    original_price: undefined,
+    discount_percentage: undefined,
+    is_on_discount: false,
+    discount_start_date: undefined,
+    discount_end_date: undefined,
   });
 
   const formatoPeso = (valor: number): string => {
@@ -49,6 +55,22 @@ export default function AdminProducts() {
       currency: "COP",
       minimumFractionDigits: 0,
     });
+  };
+
+  // Función para calcular el precio final con descuento
+  const calcularPrecioFinal = (product: any): number => {
+    if (product.is_on_discount && product.original_price && product.discount_percentage) {
+      return Math.round(product.original_price * (1 - product.discount_percentage / 100));
+    }
+    return product.price;
+  };
+
+  // Función para calcular el ahorro
+  const calcularAhorro = (product: any): number => {
+    if (product.is_on_discount && product.original_price && product.discount_percentage) {
+      return product.original_price - calcularPrecioFinal(product);
+    }
+    return 0;
   };
 
   const addTag = () => {
@@ -69,10 +91,49 @@ export default function AdminProducts() {
     });
   };
 
-  // Filtrar productos por estado
-  const filteredProducts = statusFilter === "all" 
-    ? products 
-    : products.filter(product => product.status === statusFilter);
+  // Filtrar productos por estado y descuento
+  const filteredProducts = products.filter(product => {
+    // Filtro por estado
+    const statusMatch = statusFilter === "all" || product.status === statusFilter;
+    
+    // Filtro por descuento
+    let discountMatch = true;
+    if (discountFilter !== "all") {
+      switch (discountFilter) {
+        case "with_discount":
+          discountMatch = !!(product.is_on_discount && product.original_price && product.discount_percentage);
+          break;
+        case "active_discount":
+          if (!product.is_on_discount || !product.discount_start_date || !product.discount_end_date) {
+            discountMatch = false;
+          } else {
+            const now = new Date();
+            const start = new Date(product.discount_start_date);
+            const end = new Date(product.discount_end_date);
+            discountMatch = start <= now && end >= now;
+          }
+          break;
+        case "scheduled_discount":
+          if (!product.is_on_discount || !product.discount_start_date) {
+            discountMatch = false;
+          } else {
+            discountMatch = new Date(product.discount_start_date) > new Date();
+          }
+          break;
+        case "expired_discount":
+          if (!product.is_on_discount || !product.discount_end_date) {
+            discountMatch = false;
+          } else {
+            discountMatch = new Date(product.discount_end_date) < new Date();
+          }
+          break;
+        default:
+          discountMatch = true;
+      }
+    }
+    
+    return statusMatch && discountMatch;
+  });
 
   // Función para subir imagen a Supabase Storage
   const uploadImage = async (file: File): Promise<string> => {
@@ -222,6 +283,35 @@ export default function AdminProducts() {
     e.preventDefault();
     setIsSubmitting(true);
 
+    // Validaciones de descuento
+    if (formData.is_on_discount) {
+      if (!formData.original_price || !formData.discount_percentage) {
+        alert('Para activar descuento, debes ingresar precio original y porcentaje de descuento');
+        setIsSubmitting(false);
+        return;
+      }
+      
+      if (formData.original_price <= formData.price) {
+        alert('El precio original debe ser mayor al precio actual');
+        setIsSubmitting(false);
+        return;
+      }
+      
+      if (formData.discount_percentage < 1 || formData.discount_percentage > 99) {
+        alert('El porcentaje de descuento debe estar entre 1 y 99');
+        setIsSubmitting(false);
+        return;
+      }
+      
+      if (formData.discount_start_date && formData.discount_end_date) {
+        if (new Date(formData.discount_start_date) >= new Date(formData.discount_end_date)) {
+          alert('La fecha de fin debe ser posterior a la fecha de inicio');
+          setIsSubmitting(false);
+          return;
+        }
+      }
+    }
+
     try {
       if (editingProduct) {
         console.log('Updating product:', editingProduct, formData);
@@ -263,6 +353,11 @@ export default function AdminProducts() {
         weight: undefined,
         dimensions: undefined,
         tags: [],
+        original_price: undefined,
+        discount_percentage: undefined,
+        is_on_discount: false,
+        discount_start_date: undefined,
+        discount_end_date: undefined,
       });
       setIsCreating(false);
     } catch (error) {
@@ -294,6 +389,11 @@ export default function AdminProducts() {
       weight: product.weight || undefined,
       dimensions: product.dimensions || undefined,
       tags: product.tags || [],
+      original_price: product.original_price || undefined,
+      discount_percentage: product.discount_percentage || undefined,
+      is_on_discount: product.is_on_discount || false,
+      discount_start_date: product.discount_start_date || undefined,
+      discount_end_date: product.discount_end_date || undefined,
     });
     setIsCreating(true);
   };
@@ -400,6 +500,11 @@ export default function AdminProducts() {
               weight: undefined,
               dimensions: undefined,
               tags: [],
+              original_price: undefined,
+              discount_percentage: undefined,
+              is_on_discount: false,
+              discount_start_date: undefined,
+              discount_end_date: undefined,
             });
           }}
           className="w-full sm:w-auto bg-[#4a5a3f] text-white px-6 py-2 rounded-md hover:bg-[#3d4a34] transition-colors cursor-pointer text-center"
@@ -460,6 +565,370 @@ export default function AdminProducts() {
                 <p className="text-xs text-gray-500 mt-1">
                   Formato: {formatoPeso(formData.price || 0)}
                 </p>
+              </div>
+              
+              {/* Discount Section */}
+              <div className="md:col-span-2">
+                <div className="flex items-center gap-3 mb-4">
+                  <input
+                    type="checkbox"
+                    id="is_on_discount"
+                    checked={formData.is_on_discount || false}
+                    onChange={(e) => {
+                      setFormData({
+                        ...formData,
+                        is_on_discount: e.target.checked,
+                        original_price: e.target.checked ? formData.original_price : undefined,
+                        discount_percentage: e.target.checked ? formData.discount_percentage : undefined,
+                        discount_start_date: e.target.checked ? formData.discount_start_date : undefined,
+                        discount_end_date: e.target.checked ? formData.discount_end_date : undefined,
+                      });
+                    }}
+                    className="w-4 h-4 text-[#4a5a3f] border-gray-300 rounded focus:ring-[#4a5a3f] cursor-pointer"
+                  />
+                  <label htmlFor="is_on_discount" className="text-sm font-medium text-gray-700 cursor-pointer">
+                    🏷️ Aplicar descuento a este producto
+                  </label>
+                </div>
+                
+                {formData.is_on_discount && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Precio Original (antes del descuento)
+                      </label>
+                      <div className="relative">
+                        <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-sm">
+                          $
+                        </span>
+                        <input
+                          type="text"
+                          value={
+                            formData.original_price === 0 || !formData.original_price
+                              ? ""
+                              : formData.original_price.toLocaleString("es-CO")
+                          }
+                          onChange={(e) => {
+                            const value = e.target.value.replace(/[^\d]/g, "");
+                            setFormData({
+                              ...formData,
+                              original_price: value ? Number(value) : undefined,
+                            });
+                          }}
+                          placeholder="0"
+                          className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#4a5a3f] cursor-text"
+                          required={formData.is_on_discount}
+                        />
+                      </div>
+                      <p className="text-xs text-gray-500 mt-1">
+                        Debe ser mayor al precio actual
+                      </p>
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Porcentaje de Descuento
+                      </label>
+                      <div className="relative">
+                        <input
+                          type="number"
+                          min="1"
+                          max="99"
+                          value={formData.discount_percentage || ""}
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            setFormData({
+                              ...formData,
+                              discount_percentage: value ? Number(value) : undefined,
+                            });
+                          }}
+                          placeholder="0"
+                          className="w-full pl-3 pr-8 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#4a5a3f] cursor-text"
+                          required={formData.is_on_discount}
+                        />
+                        <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-sm">
+                          %
+                        </span>
+                      </div>
+                      <p className="text-xs text-gray-500 mt-1">
+                        1-99% de descuento
+                      </p>
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Fecha de Inicio (opcional)
+                      </label>
+                      <div className="space-y-2">
+                        <input
+                          type="date"
+                          value={formData.discount_start_date ? formData.discount_start_date.split('T')[0] : ""}
+                          onChange={(e) => {
+                            const dateValue = e.target.value;
+                            const currentTime = new Date().toTimeString().slice(0, 5);
+                            const fullDateTime = dateValue ? `${dateValue}T${currentTime}` : undefined;
+                            setFormData({
+                              ...formData,
+                              discount_start_date: fullDateTime,
+                            });
+                          }}
+                          min={new Date().toISOString().split('T')[0]}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#4a5a3f] cursor-pointer"
+                        />
+                        <div className="flex gap-2">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const now = new Date();
+                              const today = now.toISOString().split('T')[0];
+                              const currentTime = now.toTimeString().slice(0, 5);
+                              setFormData({
+                                ...formData,
+                                discount_start_date: `${today}T${currentTime}`,
+                              });
+                            }}
+                            className="px-3 py-1 text-xs bg-blue-100 text-blue-700 rounded-md hover:bg-blue-200 transition-colors cursor-pointer date-quick-btn"
+                          >
+                            ⏰ Ahora
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const tomorrow = new Date();
+                              tomorrow.setDate(tomorrow.getDate() + 1);
+                              const tomorrowDate = tomorrow.toISOString().split('T')[0];
+                              const currentTime = new Date().toTimeString().slice(0, 5);
+                              setFormData({
+                                ...formData,
+                                discount_start_date: `${tomorrowDate}T${currentTime}`,
+                              });
+                            }}
+                            className="px-3 py-1 text-xs bg-green-100 text-green-700 rounded-md hover:bg-green-200 transition-colors cursor-pointer date-quick-btn"
+                          >
+                            🌅 Mañana
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setFormData({
+                                ...formData,
+                                discount_start_date: undefined,
+                              });
+                            }}
+                            className="px-3 py-1 text-xs bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors cursor-pointer date-quick-btn"
+                          >
+                            🗑️ Limpiar
+                          </button>
+                        </div>
+                        {formData.discount_start_date && (
+                          <p className="text-xs text-gray-500">
+                            Inicia: {new Date(formData.discount_start_date).toLocaleString('es-CO', {
+                              year: 'numeric',
+                              month: 'long',
+                              day: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            })}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Fecha de Fin (opcional)
+                      </label>
+                      <div className="space-y-2">
+                        <input
+                          type="date"
+                          value={formData.discount_end_date ? formData.discount_end_date.split('T')[0] : ""}
+                          onChange={(e) => {
+                            const dateValue = e.target.value;
+                            const currentTime = new Date().toTimeString().slice(0, 5);
+                            const fullDateTime = dateValue ? `${dateValue}T${currentTime}` : undefined;
+                            setFormData({
+                              ...formData,
+                              discount_end_date: fullDateTime,
+                            });
+                          }}
+                          min={formData.discount_start_date ? formData.discount_start_date.split('T')[0] : new Date().toISOString().split('T')[0]}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#4a5a3f] cursor-pointer"
+                        />
+                        <div className="flex gap-2">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const in7Days = new Date();
+                              in7Days.setDate(in7Days.getDate() + 7);
+                              const date7Days = in7Days.toISOString().split('T')[0];
+                              const currentTime = new Date().toTimeString().slice(0, 5);
+                              setFormData({
+                                ...formData,
+                                discount_end_date: `${date7Days}T${currentTime}`,
+                              });
+                            }}
+                            className="px-3 py-1 text-xs bg-purple-100 text-purple-700 rounded-md hover:bg-purple-200 transition-colors cursor-pointer date-quick-btn"
+                          >
+                            📅 +7 días
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const in30Days = new Date();
+                              in30Days.setDate(in30Days.getDate() + 30);
+                              const date30Days = in30Days.toISOString().split('T')[0];
+                              const currentTime = new Date().toTimeString().slice(0, 5);
+                              setFormData({
+                                ...formData,
+                                discount_end_date: `${date30Days}T${currentTime}`,
+                              });
+                            }}
+                            className="px-3 py-1 text-xs bg-orange-100 text-orange-700 rounded-md hover:bg-orange-200 transition-colors cursor-pointer date-quick-btn"
+                          >
+                            📆 +30 días
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setFormData({
+                                ...formData,
+                                discount_end_date: undefined,
+                              });
+                            }}
+                            className="px-3 py-1 text-xs bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors cursor-pointer date-quick-btn"
+                          >
+                            🗑️ Limpiar
+                          </button>
+                        </div>
+                        {formData.discount_end_date && (
+                          <p className="text-xs text-gray-500">
+                            Termina: {new Date(formData.discount_end_date).toLocaleString('es-CO', {
+                              year: 'numeric',
+                              month: 'long',
+                              day: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            })}
+                          </p>
+                        )}
+                        {/* Validación de fechas */}
+                        {formData.discount_start_date && formData.discount_end_date && 
+                         new Date(formData.discount_start_date) >= new Date(formData.discount_end_date) && (
+                          <p className="text-xs text-red-600 font-medium">
+                            ⚠️ La fecha de fin debe ser posterior a la fecha de inicio
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                    
+                    {/* Discount Info & Validation */}
+                    {formData.is_on_discount && (
+                      <div className="md:col-span-2 space-y-4">
+                        {/* Price Preview */}
+                        {formData.original_price && formData.discount_percentage && (
+                          <div className="p-4 discount-preview">
+                            <h4 className="text-sm font-medium text-gray-700 mb-3">Vista previa del precio:</h4>
+                            <div className="flex items-center gap-4 mb-2">
+                              <div className="text-lg font-medium original-price">
+                                {formatoPeso(formData.original_price)}
+                              </div>
+                              <div className="text-xl font-bold discount-price">
+                                {formatoPeso(Math.round(formData.original_price * (1 - formData.discount_percentage / 100)))}
+                              </div>
+                              <div className="px-2 py-1 discount-badge text-sm font-medium rounded-full">
+                                -{formData.discount_percentage}%
+                              </div>
+                            </div>
+                            <p className="text-sm savings-text font-medium">
+                              Ahorro: {formatoPeso(formData.original_price - Math.round(formData.original_price * (1 - formData.discount_percentage / 100)))}
+                            </p>
+                          </div>
+                        )}
+
+                        {/* Discount Status & Duration */}
+                        {formData.discount_start_date && formData.discount_end_date && (
+                          <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                            <h5 className="text-sm font-medium text-blue-900 mb-2">📅 Información del Descuento</h5>
+                            <div className="space-y-1 text-xs text-blue-800">
+                              <p>
+                                <span className="font-medium">Duración:</span> {
+                                  Math.ceil((new Date(formData.discount_end_date).getTime() - new Date(formData.discount_start_date).getTime()) / (1000 * 60 * 60 * 24))
+                                } días
+                              </p>
+                              <p>
+                                <span className="font-medium">Estado:</span> {
+                                  new Date(formData.discount_start_date) > new Date() ? '🟡 Programado' :
+                                  new Date(formData.discount_end_date) < new Date() ? '🔴 Expirado' : '🟢 Activo'
+                                }
+                              </p>
+                              {formData.discount_start_date && formData.discount_end_date && 
+                               new Date(formData.discount_start_date) >= new Date(formData.discount_end_date) && (
+                                <p className="text-red-600 font-medium">
+                                  ⚠️ Error: La fecha de fin debe ser posterior a la fecha de inicio
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Quick Setup Buttons */}
+                        <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg">
+                          <h5 className="text-sm font-medium text-gray-700 mb-2">⚡ Configuración Rápida</h5>
+                          <div className="flex flex-wrap gap-2">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const now = new Date();
+                                const in7Days = new Date();
+                                in7Days.setDate(in7Days.getDate() + 7);
+                                
+                                setFormData({
+                                  ...formData,
+                                  discount_start_date: now.toISOString().slice(0, 16),
+                                  discount_end_date: in7Days.toISOString().slice(0, 16),
+                                });
+                              }}
+                              className="px-3 py-1 text-xs bg-green-100 text-green-700 rounded-md hover:bg-green-200 transition-colors cursor-pointer date-quick-btn"
+                            >
+                              🚀 Iniciar ahora por 7 días
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const tomorrow = new Date();
+                                tomorrow.setDate(tomorrow.getDate() + 1);
+                                const in30Days = new Date();
+                                in30Days.setDate(in30Days.getDate() + 30);
+                                
+                                setFormData({
+                                  ...formData,
+                                  discount_start_date: tomorrow.toISOString().slice(0, 16),
+                                  discount_end_date: in30Days.toISOString().slice(0, 16),
+                                });
+                              }}
+                              className="px-3 py-1 text-xs bg-blue-100 text-blue-700 rounded-md hover:bg-blue-200 transition-colors cursor-pointer date-quick-btn"
+                            >
+                              📅 Mañana por 30 días
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setFormData({
+                                  ...formData,
+                                  discount_start_date: undefined,
+                                  discount_end_date: undefined,
+                                });
+                              }}
+                              className="px-3 py-1 text-xs bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors cursor-pointer date-quick-btn"
+                            >
+                              🗑️ Limpiar fechas
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -1134,21 +1603,52 @@ export default function AdminProducts() {
 
       {/* Filtros */}
       <div className="bg-white p-4 rounded-lg shadow-lg mb-6">
-        <div className="flex items-center gap-4">
-          <label className="text-sm font-medium text-gray-700">
-            Filtrar por estado:
-          </label>
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#4a5a3f] cursor-pointer"
-          >
-            <option value="all">Todos ({products.length})</option>
-            <option value="active">Activos ({products.filter(p => p.status === 'active').length})</option>
-            <option value="inactive">Inactivos ({products.filter(p => p.status === 'inactive').length})</option>
-            <option value="draft">Borradores ({products.filter(p => p.status === 'draft').length})</option>
-            <option value="out_of_stock">Sin Stock ({products.filter(p => p.status === 'out_of_stock').length})</option>
-          </select>
+        <div className="flex flex-wrap items-center gap-4">
+          <div className="flex items-center gap-2">
+            <label className="text-sm font-medium text-gray-700">
+              Estado:
+            </label>
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#4a5a3f] cursor-pointer"
+            >
+              <option value="all">Todos ({products.length})</option>
+              <option value="active">Activos ({products.filter(p => p.status === 'active').length})</option>
+              <option value="inactive">Inactivos ({products.filter(p => p.status === 'inactive').length})</option>
+              <option value="draft">Borradores ({products.filter(p => p.status === 'draft').length})</option>
+              <option value="out_of_stock">Sin Stock ({products.filter(p => p.status === 'out_of_stock').length})</option>
+            </select>
+          </div>
+          
+          <div className="flex items-center gap-2">
+            <label className="text-sm font-medium text-gray-700">
+              Descuentos:
+            </label>
+            <select
+              value={discountFilter}
+              onChange={(e) => setDiscountFilter(e.target.value)}
+              className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#4a5a3f] cursor-pointer"
+            >
+              <option value="all">Todos los productos</option>
+              <option value="with_discount">Con descuento ({products.filter(p => p.is_on_discount && p.original_price && p.discount_percentage).length})</option>
+              <option value="active_discount">Descuentos activos ({products.filter(p => {
+                if (!p.is_on_discount || !p.discount_start_date || !p.discount_end_date) return false;
+                const now = new Date();
+                const start = new Date(p.discount_start_date);
+                const end = new Date(p.discount_end_date);
+                return start <= now && end >= now;
+              }).length})</option>
+              <option value="scheduled_discount">Descuentos programados ({products.filter(p => {
+                if (!p.is_on_discount || !p.discount_start_date) return false;
+                return new Date(p.discount_start_date) > new Date();
+              }).length})</option>
+              <option value="expired_discount">Descuentos expirados ({products.filter(p => {
+                if (!p.is_on_discount || !p.discount_end_date) return false;
+                return new Date(p.discount_end_date) < new Date();
+              }).length})</option>
+            </select>
+          </div>
         </div>
       </div>
 
@@ -1165,7 +1665,10 @@ export default function AdminProducts() {
                   Categoría
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Precio
+                  Precio Final
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Descuento
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Stock
@@ -1205,7 +1708,50 @@ export default function AdminProducts() {
                     {product.category}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {formatoPeso(product.price)}
+                    <div className="flex flex-col">
+                      <div className="text-lg font-bold text-[#4a5a3f]">
+                        {formatoPeso(calcularPrecioFinal(product))}
+                      </div>
+                      {product.is_on_discount && product.original_price && product.discount_percentage && (
+                        <div className="text-sm text-gray-500 line-through">
+                          {formatoPeso(product.original_price)}
+                        </div>
+                      )}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    {product.is_on_discount && product.original_price && product.discount_percentage ? (
+                      <div className="flex flex-col items-center">
+                        <div className="px-2 py-1 bg-red-100 text-red-800 text-xs font-bold rounded-full mb-1">
+                          -{product.discount_percentage}% OFF
+                        </div>
+                        <div className="text-xs text-green-600 font-medium">
+                          Ahorras: {formatoPeso(calcularAhorro(product))}
+                        </div>
+                        {/* Estado del descuento */}
+                        {product.discount_start_date && product.discount_end_date && (
+                          <div className="text-xs mt-1">
+                            {new Date(product.discount_start_date) > new Date() ? (
+                              <span className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full">
+                                🟡 Programado
+                              </span>
+                            ) : new Date(product.discount_end_date) < new Date() ? (
+                              <span className="px-2 py-1 bg-red-100 text-red-800 rounded-full">
+                                🔴 Expirado
+                              </span>
+                            ) : (
+                              <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full">
+                                🟢 Activo
+                              </span>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="text-sm text-gray-400 text-center">
+                        Sin descuento
+                      </div>
+                    )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                     <span className={`font-medium ${

@@ -5,6 +5,7 @@ import AuthModal from "./authModal";
 import { useCartStore } from "@/store/cartStore";
 import { useUIStore } from "@/store/uiStore";
 import { useAuthContext } from "@/contexts/AuthContext";
+import { getCurrentPrice, getSavingsAmount, isDiscountActive, getDiscountPercentage } from "@/components/types/Product";
 
 export default function ShoppingCart() {
   const {
@@ -14,6 +15,7 @@ export default function ShoppingCart() {
     updateQuantity,
     removeFromCart,
     getTotal,
+    getItemPrice,
   } = useCartStore();
   const {
     isPurchaseModalOpen,
@@ -40,11 +42,11 @@ export default function ShoppingCart() {
     let message = `¡Hola! Me interesa comprar los siguientes productos:\n\n`;
 
     cart.forEach((item, index) => {
-      const price = item.product.price;
+      const finalPrice = getCurrentPrice(item.product);
       message += `${index + 1}. ${item.product.name}\n`;
       message += `   Talla: ${item.size}\n`;
       message += `   Cantidad: ${item.quantity}\n`;
-      message += `   Precio: $${price.toLocaleString("es-CO")}\n\n`;
+      message += `   Precio: $${finalPrice.toLocaleString("es-CO")}\n\n`;
     });
 
     message += `💰 Total: $${total.toLocaleString("es-CO")}\n\n`;
@@ -162,7 +164,30 @@ export default function ShoppingCart() {
                       <p className="text-sm text-gray-600 mb-2">
                         Talla: {item.size}
                       </p>
-                      <p className="font-medium">{item.product.price}</p>
+                      <div className="flex flex-col">
+                        {isDiscountActive(item.product) ? (
+                          <>
+                            <div className="flex items-center gap-2">
+                              <span className="text-lg font-bold discount-price">
+                                ${getCurrentPrice(item.product).toLocaleString("es-CO")}
+                              </span>
+                              <span className="px-2 py-1 discount-badge text-xs font-bold rounded-full">
+                                -{getDiscountPercentage(item.product)}% OFF
+                              </span>
+                            </div>
+                            <div className="text-sm original-price">
+                              ${item.product.original_price?.toLocaleString("es-CO")}
+                            </div>
+                            <div className="text-xs savings-text font-medium">
+                              Ahorras: ${getSavingsAmount(item.product).toLocaleString("es-CO")}
+                            </div>
+                          </>
+                        ) : (
+                          <span className="text-lg font-medium">
+                            ${getCurrentPrice(item.product).toLocaleString("es-CO")}
+                          </span>
+                        )}
+                      </div>
 
                       <div className="flex items-center gap-3 mt-2">
                         <div className="flex items-center border border-gray-300 rounded">

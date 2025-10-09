@@ -3,6 +3,7 @@ import Image from "next/image"
 import { useUIStore } from "@/store/uiStore"
 import { useCartStore } from "@/store/cartStore"
 import { useProductUrl } from "@/hooks/useProductUrl"
+import { getCurrentPrice, getSavingsAmount, isDiscountActive, getDiscountPercentage } from "@/components/types/Product"
 
 export default function ProductModal() {
     const { selectedProduct, selectedSize, currentImageIndex, setSelectedProduct, setSelectedSize, setCurrentImageIndex } = useUIStore()
@@ -146,7 +147,33 @@ export default function ProductModal() {
         <div className="space-y-6">
           <div>
             <h2 className="text-2xl font-bold mb-2">{selectedProduct.name}</h2>
-            <p className="text-2xl font-medium">{selectedProduct.price ? selectedProduct.price.toLocaleString("es-CO") : "0"}$</p>
+            
+            {/* Price Display with Discount */}
+            {isDiscountActive(selectedProduct) ? (
+              <div className="mb-4">
+                <div className="flex items-center gap-3 mb-2">
+                  <span className="text-3xl font-bold discount-price">
+                    ${getCurrentPrice(selectedProduct).toLocaleString("es-CO")}
+                  </span>
+                  <span className="px-3 py-1 discount-badge text-sm font-bold rounded-full">
+                    -{getDiscountPercentage(selectedProduct)}% OFF
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-lg original-price">
+                    ${selectedProduct.original_price?.toLocaleString("es-CO")}
+                  </span>
+                  <span className="text-sm savings-text font-medium">
+                    Ahorras ${getSavingsAmount(selectedProduct).toLocaleString("es-CO")}
+                  </span>
+                </div>
+              </div>
+            ) : (
+              <p className="text-2xl font-medium mb-4">
+                ${selectedProduct.price ? selectedProduct.price.toLocaleString("es-CO") : "0"}
+              </p>
+            )}
+            
             {!selectedSize && (
                 <div className="flex items-center gap-1 text-amber-600 text-sm mt-5">
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -247,18 +274,47 @@ export default function ProductModal() {
             </button>
 
             {!showDeliveryInfo && (
-              <div className="pt-4 space-y-4 text-sm text-gray-700">
-                <div>
-                  <ul className="space-y-1">
-                    <li>• Envío a todo Colombia</li>
-                    <li>• Cambios y devoluciones en 30 días</li>
-                    <li>• Garantía de 1 año</li>
-                    <li>• Devoluciones gratis</li>
-                    <li>• Cambios gratis</li>
-                    <li>• Garantía de 1 año</li>
-                    <li>• Devoluciones gratis</li>
-                    <li>• Cambios gratis</li>
-                  </ul>
+              <div className="pt-4 space-y-6 text-sm text-gray-700">
+                {/* Envíos, devoluciones y cambios */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold text-gray-900 border-b border-gray-200 pb-2">
+                    Envíos, devoluciones y cambios
+                  </h3>
+                  
+                  {/* Envío */}
+                  <div className="space-y-3">
+                    <h4 className="font-medium text-gray-900 flex items-center gap-2">
+                      <span className="w-2 h-2 bg-[#4a5a3f] rounded-full"></span>
+                      Envío
+                    </h4>
+                    <p className="text-gray-600 leading-relaxed">
+                      El envío es <span className="font-semibold text-green-600">gratis</span> por compras superiores a 
+                      <span className="font-semibold text-green-600"> $300.000</span>, si es menor a este valor, 
+                      pagarías <span className="font-semibold text-green-600">$10.000-20.000</span> por el valor del flete. 
+                      Para conocer los tiempos de entrega.
+                    </p>
+                  </div>
+
+                  {/* Políticas de devolución */}
+                  <div className="space-y-3">
+                    <h4 className="font-medium text-gray-900 flex items-center gap-2">
+                      <span className="w-2 h-2 bg-red-500 rounded-full"></span>
+                      Políticas de devolución
+                    </h4>
+                    <p className="text-gray-600 leading-relaxed">
+                      Para solicitar un cambio de una compra en <span className="font-semibold text-gray-900">ENOUGH</span> recuerda que tienes hasta 
+                      <span className="font-semibold text-red-600"> treinta (30) días</span> desde la fecha de entrega de tu orden. 
+                      En este plazo usted debe hacer llegar su solicitud de cambio en el siguiente correo:
+                    </p>
+                    <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+                      <a 
+                        href="mailto:enough.dmd@gmail.com" 
+                        className="text-[#4a5a3f] hover:text-[#3d4a34] font-medium transition-colors"
+                      >
+                        enough.dmd@gmail.com
+                      </a>
+                    </div>
+                  </div>
                 </div>
               </div>
             )}

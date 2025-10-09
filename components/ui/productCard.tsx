@@ -7,6 +7,7 @@ import { useUIStore } from "@/store/uiStore";
 import { useProductsContext } from "@/contexts/ProductsContext";
 import { useFilteredProducts } from "@/hooks/useFilteredProducts";
 import { useProductUrl } from "@/hooks/useProductUrl";
+import { getCurrentPrice, getSavingsAmount, isDiscountActive, getDiscountPercentage } from "@/components/types/Product";
 
 export default function ProductsCards() {
   const { genderFilter, setGenderFilter, selectedProduct, setSelectedProduct, setSelectedSize, setCurrentImageIndex } = useUIStore();
@@ -127,13 +128,40 @@ export default function ProductsCards() {
 
                     <div className="flex flex-column justify-start">
                       <div className="pt1 pb3">
-                        <span className="text-lg font-medium text-gray-900">
-                          <span className="text-sm">$</span>
-                          <span className="text-sm">&nbsp;</span>
-                          <span className="text-lg">
-                            {product.price.toLocaleString()}
+                        {isDiscountActive(product) ? (
+                          <div className="flex flex-col gap-1">
+                            <div className="flex items-center gap-2">
+                              <span className="text-lg font-bold discount-price">
+                                <span className="text-sm">$</span>
+                                <span className="text-sm">&nbsp;</span>
+                                <span className="text-lg">
+                                  {getCurrentPrice(product).toLocaleString()}
+                                </span>
+                              </span>
+                              <span className="px-2 py-1 discount-badge text-xs font-bold rounded-full">
+                                -{getDiscountPercentage(product)}%
+                              </span>
+                            </div>
+                            <div className="text-sm original-price">
+                              <span className="text-xs">$</span>
+                              <span className="text-xs">&nbsp;</span>
+                              <span className="text-sm">
+                                {product.original_price?.toLocaleString()}
+                              </span>
+                            </div>
+                            <div className="text-xs savings-text font-medium">
+                              Ahorras ${getSavingsAmount(product).toLocaleString()}
+                            </div>
+                          </div>
+                        ) : (
+                          <span className="text-lg font-medium text-gray-900">
+                            <span className="text-sm">$</span>
+                            <span className="text-sm">&nbsp;</span>
+                            <span className="text-lg">
+                              {product.price.toLocaleString()}
+                            </span>
                           </span>
-                        </span>
+                        )}
                       </div>
                     </div>
                   </div>
