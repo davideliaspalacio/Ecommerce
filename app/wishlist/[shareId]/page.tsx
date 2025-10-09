@@ -137,42 +137,45 @@ export default function SharedWishlistPage() {
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <div className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 lg:gap-6">
+            {/* Información del wishlist */}
+            <div className="flex-1 min-w-0">
+              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 truncate">
                 Wishlist de {sharedWishlist.created_by_name}
               </h1>
-              <p className="text-gray-600 mt-1">
+              <p className="text-gray-600 mt-1 text-sm sm:text-base">
                 {sharedWishlist.products.length} producto{sharedWishlist.products.length !== 1 ? 's' : ''} en favoritos
               </p>
-              <div className="mt-2 flex items-center gap-4">
-                <div className="text-lg font-semibold text-[#4a5a3f]">
+              <div className="mt-2 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+                <div className="text-base sm:text-lg font-semibold text-[#4a5a3f]">
                   Total: ${calculateTotalPrice().toLocaleString("es-CO")}
                 </div>
                 {calculateTotalSavings() > 0 && (
-                  <div className="text-sm text-green-600 font-medium">
+                  <div className="text-xs sm:text-sm text-green-600 font-medium">
                     Ahorras: ${calculateTotalSavings().toLocaleString("es-CO")}
                   </div>
                 )}
               </div>
             </div>
-            <div className="flex items-center gap-3">
+            
+            {/* Botones de acción */}
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
               {sharedWishlist.products.length > 0 && (
                 <button
                   onClick={handlePurchaseWishlist}
-                  className="inline-flex items-center px-6 py-3 bg-[#4a5a3f] text-white font-medium rounded-lg hover:bg-[#3d4a34] transition-colors"
+                  className="inline-flex items-center justify-center px-4 sm:px-6 py-2 sm:py-3 bg-[#4a5a3f] text-white font-medium rounded-lg hover:bg-[#3d4a34] transition-colors text-sm sm:text-base cursor-pointer"
                 >
-                  <ShoppingCart className="w-4 h-4 mr-2" />
-                  Comprar Wishlist
+                  <ShoppingCart className="w-4 h-4 mr-2 flex-shrink-0" />
+                  <span className="truncate">Comprar Wishlist</span>
                 </button>
               )}
               <a
                 href="/"
-                className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors"
+                className="inline-flex items-center justify-center px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors text-sm sm:text-base cursor-pointer"
               >
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Volver al inicio
+                <ArrowLeft className="w-4 h-4 mr-2 flex-shrink-0" />
+                <span className="truncate">Volver al inicio</span>
               </a>
             </div>
           </div>
@@ -204,7 +207,7 @@ export default function SharedWishlistPage() {
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
             {sharedWishlist.products.map((product, index) => (
               <div
                 key={product.id}
@@ -222,9 +225,9 @@ export default function SharedWishlistPage() {
                   />
                 </div>
 
-                <div className="p-4">
+                <div className="p-3 sm:p-4">
                   <h3 
-                    className="font-medium text-gray-900 mb-2 line-clamp-2 cursor-pointer hover:text-[#4a5a3f] transition-colors"
+                    className="font-medium text-gray-900 mb-2 line-clamp-2 cursor-pointer hover:text-[#4a5a3f] transition-colors text-sm sm:text-base"
                     onClick={() => handleProductClick(product)}
                   >
                     {product.name}
@@ -233,15 +236,15 @@ export default function SharedWishlistPage() {
                   <div className="mb-3">
                     {isDiscountActive(product) ? (
                       <>
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="text-lg font-bold discount-price">
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 mb-1">
+                          <span className="text-base sm:text-lg font-bold discount-price">
                             ${getCurrentPrice(product).toLocaleString("es-CO")}
                           </span>
-                          <span className="px-2 py-1 discount-badge text-xs font-bold rounded-full">
+                          <span className="px-2 py-1 discount-badge text-xs font-bold rounded-full self-start">
                             -{getDiscountPercentage(product)}% OFF
                           </span>
                         </div>
-                        <div className="text-sm original-price">
+                        <div className="text-xs sm:text-sm original-price">
                           ${product.original_price?.toLocaleString("es-CO")}
                         </div>
                         <div className="text-xs savings-text font-medium">
@@ -249,7 +252,7 @@ export default function SharedWishlistPage() {
                         </div>
                       </>
                     ) : (
-                      <span className="text-lg font-medium">
+                      <span className="text-base sm:text-lg font-medium">
                         ${getCurrentPrice(product).toLocaleString("es-CO")}
                       </span>
                     )}
@@ -258,7 +261,7 @@ export default function SharedWishlistPage() {
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => handleAddToCart(product, product.sizes[0])}
-                      className="flex-1 px-3 py-2 bg-[#4a5a3f] text-white text-sm font-medium rounded hover:bg-[#3d4a34] transition-colors cursor-pointer"
+                      className="flex-1 px-3 py-2 bg-[#4a5a3f] text-white text-xs sm:text-sm font-medium rounded hover:bg-[#3d4a34] transition-colors cursor-pointer"
                     >
                       Agregar al carrito
                     </button>
@@ -271,15 +274,15 @@ export default function SharedWishlistPage() {
       </div>
 
       {/* Footer */}
-      <div className="bg-white border-t mt-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="bg-white border-t mt-8 sm:mt-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
           <div className="text-center">
-            <p className="text-gray-600 mb-4">
+            <p className="text-gray-600 mb-4 text-sm sm:text-base px-4">
               ¿Te gusta este wishlist? Crea tu cuenta para guardar tus propios favoritos.
             </p>
             <a
               href="/"
-              className="inline-flex items-center px-6 py-3 bg-[#4a5a3f] text-white font-medium rounded-lg hover:bg-[#3d4a34] transition-colors"
+              className="inline-flex items-center justify-center px-4 sm:px-6 py-2 sm:py-3 bg-[#4a5a3f] text-white font-medium rounded-lg hover:bg-[#3d4a34] transition-colors text-sm sm:text-base"
             >
               Explorar productos
             </a>
@@ -291,62 +294,62 @@ export default function SharedWishlistPage() {
       {showPurchaseModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg max-w-md w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6">
+            <div className="p-4 sm:p-6">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-xl font-bold text-gray-900">
+                <h3 className="text-lg sm:text-xl font-bold text-gray-900 pr-2">
                   Confirmar Compra del Wishlist
                 </h3>
                 <button
                   onClick={() => setShowPurchaseModal(false)}
-                  className="text-gray-400 hover:text-gray-600 transition-colors"
+                  className="text-gray-400 hover:text-gray-600 transition-colors flex-shrink-0"
                 >
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                   </svg>
                 </button>
               </div>
 
               <div className="space-y-4">
-                <div className="bg-gray-50 p-4 rounded-lg">
-                  <h4 className="font-medium text-gray-900 mb-2">Resumen de la compra:</h4>
+                <div className="bg-gray-50 p-3 sm:p-4 rounded-lg">
+                  <h4 className="font-medium text-gray-900 mb-2 text-sm sm:text-base">Resumen de la compra:</h4>
                   <div className="space-y-2">
-                    <div className="flex justify-between text-sm">
+                    <div className="flex justify-between text-xs sm:text-sm">
                       <span>Productos:</span>
                       <span>{sharedWishlist.products.length}</span>
                     </div>
-                    <div className="flex justify-between text-sm">
+                    <div className="flex justify-between text-xs sm:text-sm">
                       <span>Subtotal:</span>
                       <span>${calculateTotalPrice().toLocaleString("es-CO")}</span>
                     </div>
                     {calculateTotalSavings() > 0 && (
-                      <div className="flex justify-between text-sm text-green-600">
+                      <div className="flex justify-between text-xs sm:text-sm text-green-600">
                         <span>Ahorros:</span>
                         <span>-${calculateTotalSavings().toLocaleString("es-CO")}</span>
                       </div>
                     )}
-                    <div className="border-t pt-2 flex justify-between font-semibold">
+                    <div className="border-t pt-2 flex justify-between font-semibold text-sm sm:text-base">
                       <span>Total:</span>
                       <span>${calculateTotalPrice().toLocaleString("es-CO")}</span>
                     </div>
                   </div>
                 </div>
 
-                <div className="bg-blue-50 p-4 rounded-lg">
+                <div className="bg-blue-50 p-3 sm:p-4 rounded-lg">
                   <div className="flex items-start">
-                    <svg className="w-5 h-5 text-blue-500 mt-0.5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-4 h-4 sm:w-5 sm:h-5 text-blue-500 mt-0.5 mr-2 sm:mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
-                    <div className="text-sm text-blue-800">
+                    <div className="text-xs sm:text-sm text-blue-800">
                       <p className="font-medium mb-1">¿Qué sucede al confirmar?</p>
                       <p>Todos los productos de este wishlist se agregarán a tu carrito de compras. Podrás revisar y modificar tu pedido antes de finalizar la compra.</p>
                     </div>
                   </div>
                 </div>
 
-                <div className="flex gap-3 pt-4">
+                <div className="flex flex-col sm:flex-row gap-3 pt-4">
                   <button
                     onClick={() => setShowPurchaseModal(false)}
-                    className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                    className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm sm:text-base"
                     disabled={isPurchasing}
                   >
                     Cancelar
@@ -354,7 +357,7 @@ export default function SharedWishlistPage() {
                   <button
                     onClick={handleConfirmPurchase}
                     disabled={isPurchasing}
-                    className="flex-1 px-4 py-2 bg-[#4a5a3f] text-white rounded-lg hover:bg-[#3d4a34] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                    className="flex-1 px-4 py-2 bg-[#4a5a3f] text-white rounded-lg hover:bg-[#3d4a34] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center text-sm sm:text-base"
                   >
                     {isPurchasing ? (
                       <>
@@ -379,28 +382,28 @@ export default function SharedWishlistPage() {
       {purchaseSuccess && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg max-w-md w-full">
-            <div className="p-6 text-center">
-              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="p-4 sm:p-6 text-center">
+              <div className="w-12 h-12 sm:w-16 sm:h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg className="w-6 h-6 sm:w-8 sm:h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
               </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-2">
+              <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-2">
                 ¡Compra Agregada al Carrito!
               </h3>
-              <p className="text-gray-600 mb-6">
+              <p className="text-gray-600 mb-4 sm:mb-6 text-sm sm:text-base px-2">
                 Todos los productos del wishlist han sido agregados a tu carrito. Serás redirigido al inicio en unos segundos.
               </p>
-              <div className="flex gap-3">
+              <div className="flex flex-col sm:flex-row gap-3">
                 <button
                   onClick={() => setPurchaseSuccess(false)}
-                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm sm:text-base"
                 >
                   Cerrar
                 </button>
                 <a
                   href="/"
-                  className="flex-1 px-4 py-2 bg-[#4a5a3f] text-white rounded-lg hover:bg-[#3d4a34] transition-colors text-center"
+                  className="flex-1 px-4 py-2 bg-[#4a5a3f] text-white rounded-lg hover:bg-[#3d4a34] transition-colors text-center text-sm sm:text-base"
                 >
                   Ir al Carrito
                 </a>
