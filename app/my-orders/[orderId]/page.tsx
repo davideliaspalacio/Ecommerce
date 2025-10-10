@@ -107,13 +107,11 @@ export default function OrderDetailPage() {
       pending: {
         icon: "⏳",
         label: "Pendiente",
-        description: "Tu pedido está siendo procesado",
         color: "yellow",
       },
       completed: {
         icon: "✅",
         label: "Completado",
-        description: "Tu pedido ha sido entregado exitosamente",
         color: "green",
       },
       failed: {
@@ -198,7 +196,6 @@ export default function OrderDetailPage() {
           <div className="text-4xl">{statusInfo.icon}</div>
           <div>
             <h2 className="text-2xl font-bold text-gray-900">{statusInfo.label}</h2>
-            <p className="text-gray-600">{statusInfo.description}</p>
             <p className="text-sm text-gray-500 mt-1">
               Orden realizada el{" "}
               {new Date(order.created_at).toLocaleDateString("es-CO", {

@@ -14,13 +14,8 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Truck, CreditCard, Lock, Check  } from "lucide-react";
-
-// Declarar el objeto ePayco en el window
-declare global {
-  interface Window {
-    ePayco: any;
-  }
-}
+import CreditCardForm from "@/components/ui/CreditCardForm";
+import PaymentSuccessModal from "@/components/ui/PaymentSuccessModal";
 
 const colombianDepartments = [
   "Amazonas", "Antioquia", "Arauca", "Atlántico", "Bolívar", "Boyacá",
@@ -37,10 +32,13 @@ export default function CheckoutPage() {
   const router = useRouter();
   const { user } = useAuthContext();
   const { cart, getTotal, clearCart } = useCartStore();
-  const [step, setStep] = useState<'shipping' | 'review'>('shipping');
+  const [step, setStep] = useState<'shipping' | 'review' | 'payment'>('shipping');
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [epaycoLoaded, setEpaycoLoaded] = useState(false);
+  const [createdOrderId, setCreatedOrderId] = useState<string | null>(null);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [paymentData, setPaymentData] = useState<any>(null);
+  const [paymentCompleted, setPaymentCompleted] = useState(false);
   
   const [formData, setFormData] = useState<ShippingInfoType>({
     full_name: "",
@@ -58,39 +56,26 @@ export default function CheckoutPage() {
 
   const [errors, setErrors] = useState<Partial<Record<keyof ShippingInfoType, string>>>({});
 
-  // Redirigir si no hay usuario o carrito vacío
+  // Redirigir si no hay usuario o carrito vacío (pero NUNCA si estamos mostrando el modal)
   useEffect(() => {
+    console.log('🔍 useEffect ejecutándose:', { user: !!user, cartLength: cart.length, paymentCompleted, showSuccessModal });
+    
     if (!user) {
+      console.log('❌ No hay usuario, redirigiendo...');
       router.push("/");
       return;
     }
-    if (cart.length === 0) {
+    
+    // Solo redirigir si no hay carrito Y no estamos mostrando el modal de éxito
+    if (cart.length === 0 && !showSuccessModal) {
+      console.log('❌ Carrito vacío y sin modal, redirigiendo...');
       router.push("/");
       return;
     }
-  }, [user, cart, router]);
+    
+    console.log('✅ No redirigiendo, condiciones OK');
+  }, [user, cart, router, showSuccessModal]);
 
-  // Cargar el script de ePayco
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-
-    if (window.ePayco) {
-      setEpaycoLoaded(true);
-      return;
-    }
-
-    const script = document.createElement("script");
-    script.src = "https://checkout.epayco.co/checkout.js";
-    script.async = true;
-    script.onload = () => {
-      setEpaycoLoaded(true);
-    };
-    script.onerror = () => {
-      setError("Error al cargar ePayco. Por favor intenta nuevamente.");
-    };
-
-    document.body.appendChild(script);
-  }, []);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
@@ -147,8 +132,8 @@ export default function CheckoutPage() {
     }
   };
 
-  const handlePayment = async () => {
-    if (!user || cart.length === 0 || !epaycoLoaded || !window.ePayco) {
+  const handleContinueToPayment = async () => {
+    if (!user || cart.length === 0) {
       setError("Error al procesar el pago. Por favor intenta nuevamente.");
       return;
     }
@@ -186,50 +171,104 @@ export default function CheckoutPage() {
       }
 
       const { order } = await orderResponse.json();
+      setCreatedOrderId(order.id);
+      
+      // Avanzar al paso de pago
+      setStep('payment');
+    } catch (err: any) {
+      console.error("Error creando orden:", err);
+      setError(err.message || "Error al crear la orden");
+    } finally {
+      setIsProcessing(false);
+    }
+  };
 
-      const productNames = cart
-        .map((item) => `${item.product.name} (${item.size}) x${item.quantity}`)
-        .join(", ");
+  const handleCardSubmit = async (cardData: any) => {
+    if (!createdOrderId) {
+      setError("Error: No se encontró la orden");
+      return;
+    }
 
-      const description =
-        productNames.length > 200
-          ? productNames.substring(0, 197) + "..."
-          : productNames;
+    setIsProcessing(true);
+    setError(null);
 
-      const handler = window.ePayco.checkout.configure({
-        key: process.env.NEXT_PUBLIC_EPAYCO_PUBLIC_KEY,
-        test: process.env.NODE_ENV === "development",
+    try {
+      // Procesar el pago con los datos de la tarjeta
+      const paymentResponse = await fetch("/api/epayco/process-payment", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          order_id: createdOrderId,
+          card_data: {
+            card_number: cardData.card_number,
+            card_exp_year: cardData.card_exp_year,
+            card_exp_month: cardData.card_exp_month,
+            card_cvc: cardData.card_cvc,
+          },
+          customer_data: {
+            doc_type: cardData.doc_type,
+            doc_number: cardData.doc_number,
+            name: formData.full_name.split(' ')[0],
+            last_name: formData.full_name.split(' ').slice(1).join(' ') || '',
+            email: formData.email,
+            phone: formData.phone,
+            cell_phone: formData.phone,
+          },
+          dues: '1', // Pago en una sola cuota
+        }),
       });
 
-      const data = {
-        name: "Compra en Mattelsa",
-        description: description,
-        invoice: order.id,
-        currency: "cop",
-        amount: total.toString(),
-        tax_base: subtotal.toString(),
-        tax: tax.toString(),
-        country: "co",
-        lang: "es",
-        external: "false",
-        confirmation: `${process.env.NEXT_PUBLIC_APP_URL}/api/epayco/confirm`,
-        response: `${process.env.NEXT_PUBLIC_APP_URL}/payment-success?order_id=${order.id}`,
-        name_billing: formData.full_name,
-        type_doc_billing: formData.document_type,
-        number_doc_billing: formData.document_number,
-        email_billing: formData.email,
-        mobilephone_billing: formData.phone,
-        address_billing: formData.address,
-        extra1: order.id,
-        extra2: user.id,
-        extra3: cart.length.toString(),
-        methodsDisable: [],
-      };
+      const result = await paymentResponse.json();
+      
+      console.log('Resultado del pago:', result);
 
-      handler.open(data);
+      if (!result.success) {
+        // Mostrar información de debug si está disponible
+        const errorMessage = result.message || result.error || "Error procesando el pago";
+        const errorDetails = result.details ? ` (${result.details})` : '';
+        
+        console.error('Error en el pago:', {
+          error: result.error,
+          message: result.message,
+          details: result.details,
+          debug: result.debug,
+        });
+        
+        setError(errorMessage + errorDetails);
+        return;
+      }
+
+      // Pago exitoso
+      if (result.payment_status === 'approved') {
+        console.log('🎉 Pago aprobado, mostrando modal...', result.data);
+        
+        // Guardar datos del pago y mostrar modal PRIMERO
+        setPaymentData(result.data);
+        setShowSuccessModal(true);
+        
+        console.log('✅ Modal configurado, estado:', { showSuccessModal: true, paymentData: !!result.data });
+        
+        // NO limpiar el carrito automáticamente - que lo haga el modal
+        // clearCart();
+      } else if (result.payment_status === 'pending') {
+        // Pago pendiente
+        setError("Tu pago está pendiente de confirmación. Te notificaremos cuando se procese.");
+        
+        setTimeout(() => {
+          router.push(`/my-orders/${createdOrderId}`);
+        }, 2000);
+      } else {
+        // Pago rechazado
+        setError(result.data?.respuesta || "El pago fue rechazado. Por favor verifica los datos de tu tarjeta.");
+      }
     } catch (err: any) {
       console.error("Error procesando pago:", err);
-      setError(err.message || "Error al procesar el pago");
+      setError(err.message || "Error al procesar el pago. Por favor verifica tu conexión e intenta nuevamente.");
+      
+      // Log adicional para debugging
+      console.error('Stack trace:', err.stack);
     } finally {
       setIsProcessing(false);
     }
@@ -278,21 +317,30 @@ export default function CheckoutPage() {
       <main className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="space-y-6">
           {/* Progress Steps */}
-          <div className="flex items-center gap-3 mb-6">
-            <div className={`flex items-center gap-2 transition-colors ${step === 'shipping' ? 'text-black' : 'text-[#3d4a34]'}`}>
+          <div className="flex items-center gap-2 mb-6">
+            <div className={`flex items-center gap-1 transition-colors ${step === 'shipping' ? 'text-black' : 'text-[#3d4a34]'}`}>
               <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold transition-all ${step === 'shipping' ? 'bg-[#3d4a34] text-white' : 'bg-[#3d4a34] text-white'}`}>
-                {step === 'review' ? <Check className="h-5 w-5" /> : '1'}
+                {(step === 'review' || step === 'payment') ? <Check className="h-4 w-4" /> : '1'}
               </div>
-              <span className="font-medium text-sm">Información de envío</span>
+              <span className="font-medium text-xs sm:text-sm hidden sm:inline">Envío</span>
             </div>
             <div className="flex-1 h-[2px] bg-gray-300">
-              <div className={`h-full transition-all duration-500 ${step === 'review' ? 'bg-[#3d4a34] w-full' : 'bg-[#3d4a34] w-0'}`}></div>
+              <div className={`h-full transition-all duration-500 ${(step === 'review' || step === 'payment') ? 'bg-[#3d4a34] w-full' : 'bg-[#3d4a34] w-0'}`}></div>
             </div>
-            <div className={`flex items-center gap-2 transition-colors ${step === 'review' ? 'text-black' : 'text-gray-400'}`}>
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold transition-all ${step === 'review' ? 'bg-[#3d4a34] text-white' : 'bg-gray-300'}`}>
-                2
+            <div className={`flex items-center gap-1 transition-colors ${step === 'review' ? 'text-black' : (step === 'payment' ? 'text-[#3d4a34]' : 'text-gray-400')}`}>
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold transition-all ${step === 'review' ? 'bg-[#3d4a34] text-white' : (step === 'payment' ? 'bg-[#3d4a34] text-white' : 'bg-gray-300')}`}>
+                {step === 'payment' ? <Check className="h-4 w-4" /> : '2'}
               </div>
-              <span className="font-medium text-sm">Revisar y pagar</span>
+              <span className="font-medium text-xs sm:text-sm hidden sm:inline">Revisar</span>
+            </div>
+            <div className="flex-1 h-[2px] bg-gray-300">
+              <div className={`h-full transition-all duration-500 ${step === 'payment' ? 'bg-[#3d4a34] w-full' : 'bg-[#3d4a34] w-0'}`}></div>
+            </div>
+            <div className={`flex items-center gap-1 transition-colors ${step === 'payment' ? 'text-black' : 'text-gray-400'}`}>
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold transition-all ${step === 'payment' ? 'bg-[#3d4a34] text-white' : 'bg-gray-300'}`}>
+                3
+              </div>
+              <span className="font-medium text-xs sm:text-sm hidden sm:inline">Pagar</span>
             </div>
           </div>
 
@@ -509,15 +557,15 @@ export default function CheckoutPage() {
                 </Button>
               </CardFooter>
             </Card>
-          ) : (
+          ) : step === 'review' ? (
             <Card className="border border-gray-200">
               <CardHeader className="space-y-1">
                 <CardTitle className="flex items-center gap-2 text-xl">
-                  <CreditCard className="h-5 w-5" />
-                  Revisar y pagar
+                  <Check className="h-5 w-5" />
+                  Revisar pedido
                 </CardTitle>
                 <CardDescription className="text-sm">
-                  Verifica tu información antes de completar el pago
+                  Verifica tu información antes de proceder al pago
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-5 pt-4">
@@ -645,8 +693,8 @@ export default function CheckoutPage() {
               </CardContent>
               <CardFooter className="flex-col space-y-3 pt-4">
                 <Button
-                  onClick={handlePayment}
-                  disabled={isProcessing || !epaycoLoaded}
+                  onClick={handleContinueToPayment}
+                  disabled={isProcessing}
                   className="w-full !bg-[#3d4a34] !hover:bg-[#3d4a34] text-white cursor-pointer"
                   size="lg"
                 >
@@ -657,13 +705,8 @@ export default function CheckoutPage() {
                     </>
                   ) : (
                     <>
-                      <Lock className="mr-2 h-5 w-5" />
-                      Pagar ${total.toLocaleString("es-CO")}                  
-                      <img 
-                      src="/epaycologo2.png" 
-                      alt="ePayco" 
-                      className="h-5 w-auto"
-                    />
+                      <CreditCard className="mr-2 h-5 w-5" />
+                      Continuar a pago
                     </>
                   )}
                 </Button>
@@ -687,9 +730,67 @@ export default function CheckoutPage() {
                   </div>
                 </CardFooter>
             </Card>
-          )}
+          ) : step === 'payment' ? (
+            <Card className="border border-gray-200">
+              <CardHeader className="space-y-1">
+                <CardTitle className="flex items-center gap-2 text-xl">
+                  <Lock className="h-5 w-5" />
+                  Pagar con tarjeta
+                </CardTitle>
+                <CardDescription className="text-sm">
+                  Pago seguro procesado por ePayco
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4 pt-4">
+                {/* Resumen compacto */}
+                <div className="bg-gray-50 rounded-lg p-3">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-gray-600">Total a pagar</span>
+                    <span className="text-lg font-bold text-[#3d4a34]">
+                      ${total.toLocaleString("es-CO")}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Formulario de tarjeta */}
+                <CreditCardForm
+                  onSubmit={handleCardSubmit}
+                  onCancel={() => setStep('review')}
+                  isProcessing={isProcessing}
+                />
+
+                {error && (
+                  <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                    <p className="text-sm text-red-800">{error}</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          ) : null}
         </div>
       </main>
+
+      {/* Modal de éxito de pago */}
+      {console.log('🔍 Estado del modal:', { showSuccessModal, paymentData: !!paymentData })}
+      {showSuccessModal && paymentData && (
+        <PaymentSuccessModal
+          isOpen={showSuccessModal}
+          onClose={() => {
+            console.log('🚪 Usuario cerró el modal...');
+            setShowSuccessModal(false);
+            // Redirigir después de cerrar el modal
+            setTimeout(() => {
+              router.push('/');
+            }, 300);
+          }}
+          onClearCart={() => {
+            console.log('🛒 Limpiando carrito desde modal...');
+            clearCart();
+          }}
+          data={paymentData}
+          total={getTotal() + Math.round(getTotal() * 0.19) + SHIPPING_COST}
+        />
+      )}
     </div>
   );
 }
