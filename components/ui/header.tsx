@@ -105,12 +105,6 @@ export default function Header() {
                           Panel Admin
                         </Link>
                       )}
-                      <Link 
-                        href="/my-orders" 
-                        className="text-xs text-gray-600 hover:text-[#4a5a3f] hover:underline"
-                      >
-                        📦 Mis Órdenes
-                      </Link>
                     </div>
                   </div>
                   <button

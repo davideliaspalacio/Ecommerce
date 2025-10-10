@@ -22,7 +22,9 @@ export default function ProductModal() {
         if (!selectedProduct || !selectedSize) return
         addToCart(selectedProduct, selectedSize)
         setSelectedProduct(null)
-        openCart()
+        if (user) {
+            openCart()
+        }
         setSelectedProduct(null)
         setSelectedSize("")
         setCurrentImageIndex(0)
