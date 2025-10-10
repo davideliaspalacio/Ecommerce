@@ -6,6 +6,7 @@ interface UIStore {
   isAuthModalOpen: boolean;
   isPurchaseModalOpen: boolean;
   isSuccessModalOpen: boolean;
+  isEpaycoCheckoutOpen: boolean;
   genderFilter: "TODOS" | "HOMBRE" | "MUJER";
   selectedProduct: any | null;
   selectedSize: string;
@@ -32,6 +33,8 @@ interface UIStore {
   closePurchaseModal: () => void;
   openSuccessModal: () => void;
   closeSuccessModal: () => void;
+  openEpaycoCheckout: () => void;
+  closeEpaycoCheckout: () => void;
 
   // Acciones de filtros
   setGenderFilter: (filter: "TODOS" | "HOMBRE" | "MUJER") => void;
@@ -58,6 +61,7 @@ export const useUIStore = create<UIStore>((set) => ({
   isAuthModalOpen: false,
   isPurchaseModalOpen: false,
   isSuccessModalOpen: false,
+  isEpaycoCheckoutOpen: false,
   genderFilter: "TODOS",
   selectedProduct: null,
   selectedSize: "",
@@ -80,6 +84,8 @@ export const useUIStore = create<UIStore>((set) => ({
   closePurchaseModal: () => set({ isPurchaseModalOpen: false }),
   openSuccessModal: () => set({ isSuccessModalOpen: true }),
   closeSuccessModal: () => set({ isSuccessModalOpen: false }),
+  openEpaycoCheckout: () => set({ isEpaycoCheckoutOpen: true }),
+  closeEpaycoCheckout: () => set({ isEpaycoCheckoutOpen: false }),
 
   // Filtros
   setGenderFilter: (filter) => set({ genderFilter: filter }),
@@ -118,6 +124,7 @@ export const useUIStore = create<UIStore>((set) => ({
     isAuthModalOpen: false,
     isPurchaseModalOpen: false,
     isSuccessModalOpen: false,
+    isEpaycoCheckoutOpen: false,
     genderFilter: "TODOS",
     selectedProduct: null,
     selectedSize: "",

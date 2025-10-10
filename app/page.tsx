@@ -6,7 +6,6 @@ import ShoppingCart from "@/components/ui/shoppingCart"
 import Header from "@/components/ui/header"
 import ImageSection from "@/components/ui/imageSection"
 import FooterSection from "@/components/ui/footerSection"
-import WhatAppButton from "@/components/ui/whatAppButton"
 
 // Componente de loading para el Suspense
 function ProductsLoading() {
@@ -33,7 +32,6 @@ export default function HomePage() {
         <ProductsCards />
       </Suspense>
       <FooterSection />
-      <WhatAppButton />
       <ShoppingCart />
     </div>
   )

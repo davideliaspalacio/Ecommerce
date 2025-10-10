@@ -105,6 +105,12 @@ export default function Header() {
                           Panel Admin
                         </Link>
                       )}
+                      <Link 
+                        href="/my-orders" 
+                        className="text-xs text-gray-600 hover:text-[#4a5a3f] hover:underline"
+                      >
+                        📦 Mis Órdenes
+                      </Link>
                     </div>
                   </div>
                   <button
@@ -136,6 +142,29 @@ export default function Header() {
                     />
                   </svg>
                 </button>
+              )}
+
+              {/* Botón de Mis Órdenes (solo si está logueado) */}
+              {user && (
+                <Link
+                  href="/my-orders"
+                  className="hidden sm:block text-gray-700 hover:text-[#4a5a3f] transition-colors relative"
+                  title="Mis órdenes"
+                >
+                  <svg
+                    className="w-5 h-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"
+                    />
+                  </svg>
+                </Link>
               )}
               
               {/* Botón de Wishlist */}
@@ -196,6 +225,29 @@ export default function Header() {
           {isMobileMenuOpen && (
             <div className="md:hidden mt-4 pb-4 border-t border-gray-200">
               <div className="flex flex-col space-y-4 pt-4">
+                {/* Enlace móvil a Mis Órdenes */}
+                {user && (
+                  <Link
+                    href="/my-orders"
+                    className="text-gray-700 hover:text-[#4a5a3f] transition-colors flex items-center justify-center gap-2 font-medium"
+                    onClick={toggleMobileMenu}
+                  >
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"
+                      />
+                    </svg>
+                    <span>Mis Órdenes</span>
+                  </Link>
+                )}
                 <div className="flex items-center gap-4 pt-2 justify-center">
                   <button className="text-gray-700 hover:text-black transition-colors cursor-pointer">
                     <svg

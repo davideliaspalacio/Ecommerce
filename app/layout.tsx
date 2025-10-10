@@ -5,7 +5,7 @@ import { Analytics } from '@vercel/analytics/next'
 import { SpeedInsights } from "@vercel/speed-insights/next"
 import { AuthProvider } from '@/contexts/AuthContext'
 import { ProductsProvider } from '@/contexts/ProductsContext'
-
+import WhatAppButton from '@/components/ui/whatAppButton'
 
 import './globals.css'
 
@@ -25,6 +25,7 @@ export default function RootLayout({
         <AuthProvider>
           <ProductsProvider>
             {children}
+            <WhatAppButton />
             <Analytics />
             <SpeedInsights />
           </ProductsProvider>
