@@ -82,26 +82,20 @@ export function useAuth() {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        
         if (isMounted) {
           const newUser = session?.user ?? null
-          const currentUserId = user?.id
-          const newUserId = newUser?.id
-          if (currentUserId !== newUserId) {
-            setUser(newUser)
-            
-            if (newUser) {
-              const cachedProfile = getCachedProfile(newUser.id)
-              if (cachedProfile) {
-
-                setProfile(cachedProfile)
-              } else {
-                await fetchProfile(newUser.id)
-              }
+          setUser(newUser)
+          
+          if (newUser) {
+            const cachedProfile = getCachedProfile(newUser.id)
+            if (cachedProfile) {
+              setProfile(cachedProfile)
             } else {
-              setProfile(null)
-              clearProfileCache() // Limpiar caché al cerrar sesión
+              await fetchProfile(newUser.id)
             }
+          } else {
+            setProfile(null)
+            clearProfileCache() // Limpiar caché al cerrar sesión
           }
           setLoading(false)
         }

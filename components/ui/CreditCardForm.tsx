@@ -107,7 +107,7 @@ export default function CreditCardForm({
             maxLength={19}
             required
             disabled={isProcessing}
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#4a5a3f] focus:border-transparent disabled:bg-gray-100"
+            className="w-full px-4 py-3 border border-gray-300 rounded-1xl focus:ring-2 focus:ring-[#4a5a3f] focus:border-transparent disabled:bg-gray-100"
           />
           <CreditCard className="absolute right-3 top-3 h-6 w-6 text-gray-400" />
         </div>
@@ -126,7 +126,7 @@ export default function CreditCardForm({
           placeholder="JUAN PEREZ"
           required
           disabled={isProcessing}
-          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#4a5a3f] focus:border-transparent uppercase disabled:bg-gray-100"
+          className="w-full px-4 py-3 border border-gray-300 rounded-1xl focus:ring-2 focus:ring-[#4a5a3f] focus:border-transparent uppercase disabled:bg-gray-100"
         />
       </div>
 
@@ -140,7 +140,7 @@ export default function CreditCardForm({
             onChange={handleInputChange}
             required
             disabled={isProcessing}
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#4a5a3f] focus:border-transparent disabled:bg-gray-100"
+            className="w-full px-4 py-3 border border-gray-300 rounded-1xl focus:ring-2 focus:ring-[#4a5a3f] focus:border-transparent disabled:bg-gray-100"
           >
             <option value="">MM</option>
             {Array.from({ length: 12 }, (_, i) => {
@@ -161,7 +161,7 @@ export default function CreditCardForm({
             onChange={handleInputChange}
             required
             disabled={isProcessing}
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#4a5a3f] focus:border-transparent disabled:bg-gray-100"
+            className="w-full px-4 py-3 border border-gray-300 rounded-1xl focus:ring-2 focus:ring-[#4a5a3f] focus:border-transparent disabled:bg-gray-100"
           >
             <option value="">AA</option>
             {Array.from({ length: 15 }, (_, i) => {
@@ -185,7 +185,7 @@ export default function CreditCardForm({
             maxLength={4}
             required
             disabled={isProcessing}
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#4a5a3f] focus:border-transparent disabled:bg-gray-100"
+            className="w-full px-4 py-3 border border-gray-300 rounded-1xl focus:ring-2 focus:ring-[#4a5a3f] focus:border-transparent disabled:bg-gray-100"
           />
         </div>
       </div>
@@ -203,7 +203,7 @@ export default function CreditCardForm({
               onChange={handleInputChange}
               required
               disabled={isProcessing}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#4a5a3f] focus:border-transparent disabled:bg-gray-100"
+              className="w-full px-4 py-3 border border-gray-300 rounded-1xl focus:ring-2 focus:ring-[#4a5a3f] focus:border-transparent disabled:bg-gray-100"
             >
               <option value="CC">Cédula de Ciudadanía</option>
               <option value="CE">Cédula de Extranjería</option>
@@ -222,7 +222,7 @@ export default function CreditCardForm({
               placeholder="123456789"
               required
               disabled={isProcessing}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#4a5a3f] focus:border-transparent disabled:bg-gray-100"
+              className="w-full px-4 py-3 border border-gray-300 rounded-1xl focus:ring-2 focus:ring-[#4a5a3f] focus:border-transparent disabled:bg-gray-100"
             />
           </div>
         </div>
@@ -237,7 +237,7 @@ export default function CreditCardForm({
 
       {/* Seguridad */}
       <div className="bg-green-50 border border-green-200 rounded-lg p-3">
-        <div className="flex items-center gap-2 text-sm text-green-800">
+        <div className="flex items-center gap-2 text-sm text-black">
           <Lock className="h-4 w-4" />
           <span>Transacción segura procesada por ePayco</span>
         </div>

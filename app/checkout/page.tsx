@@ -16,6 +16,7 @@ import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Truck, CreditCard, Lock, Check  } from "lucide-react";
 import CreditCardForm from "@/components/ui/CreditCardForm";
 import PaymentSuccessModal from "@/components/ui/PaymentSuccessModal";
+import PaymentErrorModal from "@/components/ui/PaymentErrorModal";
 
 const colombianDepartments = [
   "Amazonas", "Antioquia", "Arauca", "Atlántico", "Bolívar", "Boyacá",
@@ -37,6 +38,7 @@ export default function CheckoutPage() {
   const [error, setError] = useState<string | null>(null);
   const [createdOrderId, setCreatedOrderId] = useState<string | null>(null);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [showErrorModal, setShowErrorModal] = useState(false);
   const [paymentData, setPaymentData] = useState<any>(null);
   const [paymentCompleted, setPaymentCompleted] = useState(false);
   
@@ -56,9 +58,9 @@ export default function CheckoutPage() {
 
   const [errors, setErrors] = useState<Partial<Record<keyof ShippingInfoType, string>>>({});
 
-  // Redirigir si no hay usuario o carrito vacío (pero NUNCA si estamos mostrando el modal)
+  // Redirigir si no hay usuario o carrito vacío (pero NUNCA si estamos mostrando modales)
   useEffect(() => {
-    console.log('🔍 useEffect ejecutándose:', { user: !!user, cartLength: cart.length, paymentCompleted, showSuccessModal });
+    console.log('🔍 useEffect ejecutándose:', { user: !!user, cartLength: cart.length, paymentCompleted, showSuccessModal, showErrorModal });
     
     if (!user) {
       console.log('❌ No hay usuario, redirigiendo...');
@@ -66,15 +68,15 @@ export default function CheckoutPage() {
       return;
     }
     
-    // Solo redirigir si no hay carrito Y no estamos mostrando el modal de éxito
-    if (cart.length === 0 && !showSuccessModal) {
-      console.log('❌ Carrito vacío y sin modal, redirigiendo...');
+    // Solo redirigir si no hay carrito Y no estamos mostrando ningún modal
+    if (cart.length === 0 && !showSuccessModal && !showErrorModal) {
+      console.log('❌ Carrito vacío y sin modales, redirigiendo...');
       router.push("/");
       return;
     }
     
     console.log('✅ No redirigiendo, condiciones OK');
-  }, [user, cart, router, showSuccessModal]);
+  }, [user, cart, router, showSuccessModal, showErrorModal]);
 
 
   const handleChange = (
@@ -252,6 +254,14 @@ export default function CheckoutPage() {
         
         // NO limpiar el carrito automáticamente - que lo haga el modal
         // clearCart();
+      } else if (result.payment_status === 'rejected') {
+        console.log('❌ Pago rechazado, mostrando modal de error...', result.data);
+        
+        // Guardar datos del pago rechazado y mostrar modal de error
+        setPaymentData(result.data);
+        setShowErrorModal(true);
+        
+        console.log('✅ Modal de error configurado, estado:', { showErrorModal: true, paymentData: !!result.data });
       } else if (result.payment_status === 'pending') {
         // Pago pendiente
         setError("Tu pago está pendiente de confirmación. Te notificaremos cuando se procese.");
@@ -260,7 +270,7 @@ export default function CheckoutPage() {
           router.push(`/my-orders/${createdOrderId}`);
         }, 2000);
       } else {
-        // Pago rechazado
+        // Otros errores
         setError(result.data?.respuesta || "El pago fue rechazado. Por favor verifica los datos de tu tarjeta.");
       }
     } catch (err: any) {
@@ -786,6 +796,28 @@ export default function CheckoutPage() {
           onClearCart={() => {
             console.log('🛒 Limpiando carrito desde modal...');
             clearCart();
+          }}
+          data={paymentData}
+          total={getTotal() + Math.round(getTotal() * 0.19) + SHIPPING_COST}
+        />
+      )}
+
+      {/* Modal de error de pago */}
+      {console.log('🔍 Estado del modal de error:', { showErrorModal, paymentData: !!paymentData })}
+      {showErrorModal && paymentData && (
+        <PaymentErrorModal
+          isOpen={showErrorModal}
+          onClose={() => {
+            console.log('🚪 Usuario cerró el modal de error...');
+            setShowErrorModal(false);
+            // Volver al paso de pago para reintentar
+            setStep('payment');
+          }}
+          onRetry={() => {
+            console.log('🔄 Usuario quiere reintentar...');
+            setShowErrorModal(false);
+            // Volver al paso de pago para reintentar
+            setStep('payment');
           }}
           data={paymentData}
           total={getTotal() + Math.round(getTotal() * 0.19) + SHIPPING_COST}

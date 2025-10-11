@@ -21,82 +21,64 @@ interface ProfileCacheState {
 const CACHE_DURATION = 5 * 60 * 1000 
 
 export const useProfileCacheStore = create<ProfileCacheState>()(
-  persist(
-    (set, get) => ({
-      cache: new Map(),
-      cacheDuration: CACHE_DURATION,
+  (set, get) => ({
+    cache: new Map(),
+    cacheDuration: CACHE_DURATION,
 
-      getCachedProfile: (userId: string) => {
-        const { cache, cacheDuration } = get()
-        const cached = cache.get(userId)
+    getCachedProfile: (userId: string) => {
+      const { cache, cacheDuration } = get()
+      const cached = cache.get(userId)
+      
+      if (cached) {
+        const age = Date.now() - cached.timestamp
+        const isValid = age < cacheDuration
         
-        if (cached) {
-          const age = Date.now() - cached.timestamp
-          const isValid = age < cacheDuration
-          
-          if (isValid) {
-            return cached.profile
-          } else {
-            cache.delete(userId)
-            set({ cache: new Map(cache) })
-          }
+        if (isValid) {
+          return cached.profile
         } else {
-        }
-        
-        return null
-      },
-
-      setCachedProfile: (userId: string, profile: Profile) => {
-        const { cache } = get()
-        cache.set(userId, { profile, timestamp: Date.now() })
-        set({ cache: new Map(cache) })
-      },
-
-      clearProfileCache: (userId?: string) => {
-        const { cache } = get()
-        
-        if (userId) {
           cache.delete(userId)
-        } else {
-          cache.clear()
-        }
-        
-        set({ cache: new Map(cache) })
-      },
-
-      isProfileCached: (userId: string) => {
-        const { cache } = get()
-        return cache.has(userId)
-      },
-
-      isCacheValid: (userId: string) => {
-        const { cache, cacheDuration } = get()
-        const cached = cache.get(userId)
-        return cached ? Date.now() - cached.timestamp < cacheDuration : false
-      },
-
-      getCacheAge: (userId: string) => {
-        const { cache } = get()
-        const cached = cache.get(userId)
-        return cached ? Date.now() - cached.timestamp : null
-      }
-    }),
-    {
-      name: 'profile-cache-storage',
-
-      partialize: (state) => ({
-        cache: Array.from(state.cache.entries()),
-        cacheDuration: state.cacheDuration
-      }),
-
-      onRehydrateStorage: () => (state) => {
-        if (state && Array.isArray(state.cache)) {
-          state.cache = new Map(state.cache as [string, CachedProfile][])
-        } else {
+          set({ cache: new Map(cache) })
         }
       }
+      
+      return null
+    },
+
+    setCachedProfile: (userId: string, profile: Profile) => {
+      const { cache } = get()
+      cache.set(userId, { profile, timestamp: Date.now() })
+      set({ cache: new Map(cache) })
+    },
+
+    clearProfileCache: (userId?: string) => {
+      const { cache } = get()
+      
+      if (userId) {
+        cache.delete(userId)
+      } else {
+        cache.clear()
+      }
+      
+      set({ cache: new Map(cache) })
+    },
+
+    isProfileCached: (userId: string) => {
+      const { cache } = get()
+      return cache.has(userId)
+    },
+
+    isCacheValid: (userId: string) => {
+      const { cache, cacheDuration } = get()
+      const cached = cache.get(userId)
+      return cached ? Date.now() - cached.timestamp < cacheDuration : false
+    },
+
+    getCacheAge: (userId: string) => {
+      const { cache } = get()
+      const cached = cache.get(userId)
+      return cached ? Date.now() - cached.timestamp : null
     }
-  )
+  })
 )
 
 
