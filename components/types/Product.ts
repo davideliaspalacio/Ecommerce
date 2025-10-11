@@ -67,6 +67,8 @@ export interface ProductFilters {
     min_price?: number;
     max_price?: number;
     search?: string;
+    limit?: number;
+    offset?: number;
   }
 
 export const getCurrentPrice = (product: ProductType): number => {

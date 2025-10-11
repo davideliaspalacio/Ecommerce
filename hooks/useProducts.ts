@@ -34,6 +34,12 @@ export function useProducts() {
         query = query.or(`name.ilike.%${filters.search}%,description.ilike.%${filters.search}%`)
       }
 
+      // Aplicar paginación si se proporcionan los parámetros
+      if (filters?.limit) {
+        const offset = filters.offset || 0
+        query = query.range(offset, offset + filters.limit - 1)
+      }
+
       const { data, error } = await query
 
       if (error) {
@@ -164,17 +170,17 @@ export function useProducts() {
 
   // Obtener productos por categoría
   const fetchProductsByCategory = async (category: string) => {
-    await fetchProducts({ category })
+    await fetchProducts({ category, limit: 8, offset: 0 })
   }
 
   // Obtener productos por género
   const fetchProductsByGender = async (gender: string) => {
-    await fetchProducts({ gender })
+    await fetchProducts({ gender, limit: 8, offset: 0 })
   }
 
   // Buscar productos
   const searchProducts = async (searchTerm: string) => {
-    await fetchProducts({ search: searchTerm })
+    await fetchProducts({ search: searchTerm, limit: 8, offset: 0 })
   }
 
   // Obtener estadísticas de productos (solo admin)
@@ -196,9 +202,9 @@ export function useProducts() {
     }
   }
 
-  // Cargar productos al montar el componente
+  // Cargar productos al montar el componente (limitado a 8 para la página principal)
   useEffect(() => {
-    fetchProducts()
+    fetchProducts({ limit: 8, offset: 0 })
   }, [])
 
   return {

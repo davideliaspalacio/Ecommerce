@@ -1,4 +1,5 @@
 import Image from "next/image";
+import Link from "next/link";
 import ProductModal from "./productModal";
 import ProductFilters from "./ProductFilters";
 import { ProductSkeletonGrid } from "./ProductSkeleton";
@@ -18,6 +19,10 @@ export default function ProductsCards() {
   const { filteredProducts, isFiltering } = useFilteredProducts();
   const { isInWishlist, toggleWishlist, isLoading } = useWishlistStore();
   const { user } = useAuthContext();
+
+  // Los productos ya vienen limitados desde la API (8 productos)
+  const limitedProducts = filteredProducts;
+  const hasMoreProducts = filteredProducts.length === 8; // Si hay exactamente 8, probablemente hay más
 
   const handleProductClick = (product: any) => {
     setSelectedProduct(product);
@@ -40,58 +45,25 @@ export default function ProductsCards() {
     <>
       <section id="new-in" className="py-16 bg-gray-50">
         <div className="container mx-auto px-4">
-          <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center justify-center mb-8">
             <h3 className="text-3xl font-bold">NEW IN</h3>
-            <div className="flex gap-2">
-              <button
-                onClick={() => {
-                  setGenderFilter("TODOS");
-                  fetchProducts();
-                }}
-                className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-                  genderFilter === "TODOS"
-                    ? "bg-black text-white"
-                    : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-                }`}
-              >
-                TODOS
-              </button>
-              <button
-                onClick={() => {
-                  setGenderFilter("HOMBRE");
-                  fetchProductsByGender("HOMBRE");
-                }}
-                className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-                  genderFilter === "HOMBRE"
-                    ? "bg-black text-white"
-                    : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-                }`}
-              >
-                HOMBRE
-              </button>
-              <button
-                onClick={() => {
-                  setGenderFilter("MUJER");
-                  fetchProductsByGender("MUJER");
-                }}
-                className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-                  genderFilter === "MUJER"
-                    ? "bg-black text-white"
-                    : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-                }`}
-              >
-                MUJER
-              </button>
-            </div>
           </div>
           
           <ProductFilters />
           
           {!loading && !error && !isFiltering && (
-            <div className="mb-4">
+            <div className="mb-4 flex items-center justify-between">
               <p className="text-sm text-gray-600">
-                Mostrando {filteredProducts.length} producto{filteredProducts.length !== 1 ? 's' : ''}
+                Mostrando {limitedProducts.length} producto{limitedProducts.length !== 1 ? 's' : ''} destacado{limitedProducts.length !== 1 ? 's' : ''}
               </p>
+              {hasMoreProducts && (
+                <Link
+                  href="/products"
+                  className="text-sm text-[#4a5a3f] hover:text-[#3a4a2f] font-medium transition-colors"
+                >
+                  Ver todos →
+                </Link>
+              )}
             </div>
           )}
           
@@ -105,7 +77,7 @@ export default function ProductsCards() {
             <FilterLoadingAnimation />
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 animate-fadeIn">
-              {filteredProducts.map((product, index) => (
+              {limitedProducts.map((product, index) => (
                 <article
                   key={product.id}
                   className="pointer pt3 pb4 flex flex-column h-100 group cursor-pointer animate-fadeIn"
@@ -209,6 +181,18 @@ export default function ProductsCards() {
                   </div>
                 </article>
               ))}
+            </div>
+          )}
+
+          {/* Botón Ver Todos los Productos */}
+          {!loading && !error && !isFiltering && hasMoreProducts && (
+            <div className="flex justify-center mt-12">
+              <Link
+                href="/products"
+                className="px-8 py-3 bg-[#4a5a3f] text-white font-medium rounded-1xl transition-all duration-300 hover:bg-[#3a4a2f] hover:scale-105 shadow-lg hover:shadow-xl"
+              >
+                Ver todos los productos
+              </Link>
             </div>
           )}
         </div>

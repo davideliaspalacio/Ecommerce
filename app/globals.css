@@ -478,3 +478,30 @@
 .animate-skeleton-pulse {
   animation: skeletonPulse 1.5s ease-in-out infinite;
 }
+
+/* Line clamp utility for product names */
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Responsive product grid improvements */
+@media (max-width: 640px) {
+  .product-card-mobile {
+    min-height: 280px;
+  }
+}
+
+@media (min-width: 641px) and (max-width: 768px) {
+  .product-card-tablet {
+    min-height: 320px;
+  }
+}
+
+@media (min-width: 769px) {
+  .product-card-desktop {
+    min-height: 360px;
+  }
+}
