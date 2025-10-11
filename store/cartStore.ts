@@ -108,7 +108,7 @@ export const useCartStore = create<CartStore>()(
         try {
           const { data: { session } } = await supabase.auth.getSession();
           if (session) {
-            await fetch('/api/cart', {
+            const response = await fetch('/api/cart', {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
@@ -120,6 +120,10 @@ export const useCartStore = create<CartStore>()(
                 quantity: 1,
               }),
             });
+
+            if (response.ok) {
+              await get().loadCartFromDB();
+            }
           }
         } catch (error) {
           console.error('Error saving to database:', error);
@@ -162,6 +166,10 @@ export const useCartStore = create<CartStore>()(
 
             const result = await response.json();
             console.log('Remove response:', result);
+
+            if (response.ok) {
+              await get().loadCartFromDB();
+            }
           }
         } catch (error) {
           console.error('Error removing from database:', error);
@@ -194,7 +202,7 @@ export const useCartStore = create<CartStore>()(
             );
             
             if (cartItem?.id) {
-              await fetch(`/api/cart/${cartItem.id}`, {
+              const response = await fetch(`/api/cart/${cartItem.id}`, {
                 method: 'PUT',
                 headers: {
                   'Content-Type': 'application/json',
@@ -202,6 +210,11 @@ export const useCartStore = create<CartStore>()(
                 },
                 body: JSON.stringify({ quantity }),
               });
+
+              // Si el PUT fue exitoso, recargar el carrito desde la BD para sincronizar
+              if (response.ok) {
+                await get().loadCartFromDB();
+              }
             }
           }
         } catch (error) {
@@ -218,12 +231,17 @@ export const useCartStore = create<CartStore>()(
         try {
           const { data: { session } } = await supabase.auth.getSession();
           if (session) {
-            await fetch('/api/cart', {
+            const response = await fetch('/api/cart', {
               method: 'DELETE',
               headers: {
                 'Authorization': `Bearer ${session.access_token}`,
               },
             });
+
+            // Si el DELETE fue exitoso, recargar el carrito desde la BD para sincronizar
+            if (response.ok) {
+              await get().loadCartFromDB();
+            }
           }
         } catch (error) {
           console.error('Error clearing cart in database:', error);

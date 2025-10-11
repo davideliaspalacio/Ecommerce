@@ -222,7 +222,7 @@ export default function ShoppingCart() {
                 onClick={handleCheckoutClick}
                 className={`w-full cursor-pointer transition-all duration-300 ${
                   user 
-                    ? 'bg-black hover:bg-gray-800 text-white shadow-lg hover:shadow-xl transform hover:scale-[1.02]' 
+                    ? 'bg-[#4a5a3f] hover:bg-[#3d4a34] text-white shadow-lg hover:shadow-xl transform hover:scale-[1.02]' 
                     : 'bg-gray-400 cursor-not-allowed text-white'
                 } py-4 px-6 rounded-1xl flex items-center justify-center gap-3 font-semibold`}
                 disabled={!user}

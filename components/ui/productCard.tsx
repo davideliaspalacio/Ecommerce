@@ -192,7 +192,7 @@ export default function ProductsCards() {
                               </span>
                             </div>
                             <div className="text-xs savings-text font-medium">
-                              Ahorras ${getSavingsAmount(product).toLocaleString()}
+                              Ahorras ${getSavingsAmount(product).toLocaleString('es-CO')}
                             </div>
                           </div>
                         ) : (
