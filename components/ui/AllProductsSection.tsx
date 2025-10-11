@@ -45,6 +45,10 @@ export default function AllProductsSection() {
     };
   }, [handleObserver]);
 
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
+
   const handleProductClick = (product: any) => {
     setSelectedProduct(product);
     setSelectedSize("");
@@ -82,7 +86,11 @@ export default function AllProductsSection() {
           ) : (
             <>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 animate-fadeIn">
-                {products.map((product, index) => (
+                {products
+                  .filter((product, index, self) => 
+                    index === self.findIndex(p => p.id === product.id)
+                  )
+                  .map((product, index) => (
                   <article
                     key={product.id}
                     className="pointer pt3 pb4 flex flex-column h-100 group cursor-pointer animate-fadeIn"

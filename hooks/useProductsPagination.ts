@@ -27,6 +27,10 @@ export function useProductsPagination(limit: number = 8): UseProductsPaginationR
 
       const currentOffset = reset ? 0 : offset;
       
+      if (loading) {
+        return;
+      }
+      
       // Obtener el total de productos activos
       const { count } = await supabase
         .from('products')
@@ -53,7 +57,12 @@ export function useProductsPagination(limit: number = 8): UseProductsPaginationR
         setProducts(newProducts);
         setOffset(limit);
       } else {
-        setProducts(prev => [...prev, ...newProducts]);
+        // Deduplicar productos basándose en el ID para evitar duplicados
+        setProducts(prev => {
+          const existingIds = new Set(prev.map(p => p.id));
+          const uniqueNewProducts = newProducts.filter(p => !existingIds.has(p.id));
+          return [...prev, ...uniqueNewProducts];
+        });
         setOffset(prev => prev + limit);
       }
 
