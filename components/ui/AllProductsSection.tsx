@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useRef, useCallback } from "react";
+import { useEffect, useRef, useCallback, useState } from "react";
 import Image from "next/image";
 import ProductModal from "./productModal";
 import { ProductSkeletonGrid } from "./ProductSkeleton";
@@ -18,6 +18,7 @@ export default function AllProductsSection() {
   const { isInWishlist, toggleWishlist, isLoading } = useWishlistStore();
   const { user } = useAuthContext();
   const observerRef = useRef<HTMLDivElement>(null);
+  const [isVisible, setIsVisible] = useState(false);
 
   // Función para cargar más productos cuando se hace scroll
   const handleObserver = useCallback((entries: IntersectionObserverEntry[]) => {
@@ -49,6 +50,15 @@ export default function AllProductsSection() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, []);
 
+  // Animación de entrada desde abajo hacia arriba
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsVisible(true);
+    }, 100); // Pequeño delay para asegurar que el componente esté montado
+
+    return () => clearTimeout(timer);
+  }, []);
+
   const handleProductClick = (product: any) => {
     setSelectedProduct(product);
     setSelectedSize("");
@@ -68,9 +78,17 @@ export default function AllProductsSection() {
 
   return (
     <>
-      <section className="py-16 bg-gray-50 mt-20">
+      <section className={`py-16 bg-gray-50 mt-20 transition-all duration-1000 ease-out ${
+        isVisible 
+          ? 'opacity-100 translate-y-0' 
+          : 'opacity-0 translate-y-16'
+      }`}>
         <div className="container mx-auto px-4">
-          <div className="flex items-center justify-between mb-8">
+          <div className={`flex items-center justify-between mb-8 transition-all duration-1000 ease-out delay-200 ${
+            isVisible 
+              ? 'opacity-100 translate-y-0' 
+              : 'opacity-0 translate-y-8'
+          }`}>
             <h3 className="text-3xl font-bold">TODOS LOS PRODUCTOS</h3>
             <div className="text-sm text-gray-600">
               {totalCount > 0 && `${totalCount} productos disponibles`}
@@ -85,7 +103,11 @@ export default function AllProductsSection() {
             </div>
           ) : (
             <>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 animate-fadeIn">
+              <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 transition-all duration-1000 ease-out delay-400 ${
+                isVisible 
+                  ? 'opacity-100 translate-y-0' 
+                  : 'opacity-0 translate-y-12'
+              }`}>
                 {products
                   .filter((product, index, self) => 
                     index === self.findIndex(p => p.id === product.id)
@@ -93,8 +115,14 @@ export default function AllProductsSection() {
                   .map((product, index) => (
                   <article
                     key={product.id}
-                    className="pointer pt3 pb4 flex flex-column h-100 group cursor-pointer animate-fadeIn"
-                    style={{ animationDelay: `${index * 0.1}s` }}
+                    className={`pointer pt3 pb4 flex flex-column h-100 group cursor-pointer transition-all duration-700 ease-out ${
+                      isVisible 
+                        ? 'opacity-100 translate-y-0' 
+                        : 'opacity-0 translate-y-8'
+                    }`}
+                    style={{ 
+                      transitionDelay: `${400 + (index * 100)}ms` // Delay escalonado después de la animación principal
+                    }}
                     onClick={() => handleProductClick(product)}
                   >
                     <div className="relative mb-4">
@@ -198,7 +226,14 @@ export default function AllProductsSection() {
 
               {/* Elemento de observación para scroll infinito */}
               {hasMore && (
-                <div ref={observerRef} className="flex justify-center mt-12 py-8">
+                <div 
+                  ref={observerRef} 
+                  className={`flex justify-center mt-12 py-8 transition-all duration-1000 ease-out delay-600 ${
+                    isVisible 
+                      ? 'opacity-100 translate-y-0' 
+                      : 'opacity-0 translate-y-8'
+                  }`}
+                >
                   {loading ? (
                     <div className="flex items-center gap-3 text-gray-600">
                       <div className="w-6 h-6 border-2 border-gray-300 border-t-[#4a5a3f] rounded-full animate-spin"></div>
@@ -212,7 +247,11 @@ export default function AllProductsSection() {
 
               {/* Mostrar mensaje cuando no hay más productos */}
               {!hasMore && products.length > 0 && (
-                <div className="text-center mt-12 py-8">
+                <div className={`text-center mt-12 py-8 transition-all duration-1000 ease-out delay-600 ${
+                  isVisible 
+                    ? 'opacity-100 translate-y-0' 
+                    : 'opacity-0 translate-y-8'
+                }`}>
                   <div className="inline-flex items-center gap-2 px-4 py-2 bg-gray-100 rounded-1xl">
                     <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />

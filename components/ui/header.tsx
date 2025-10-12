@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import AuthModal from "./authModal";
 import ConfirmModal from "./ConfirmModal";
 import WishlistModal from "./wishlistModal";
@@ -11,6 +12,7 @@ import { useAuthContext } from "@/contexts/AuthContext";
 import { useState, useEffect } from "react";
 
 export default function Header() {
+  const pathname = usePathname();
   const { cart, isCartOpen, openCart, getItemCount, showCartAnimation } = useCartStore();
   const { wishlist, openWishlist, getWishlistCount } = useWishlistStore();
   const { 
@@ -74,17 +76,42 @@ export default function Header() {
             <nav className="hidden lg:flex items-center space-x-8">
               <Link
                 href="/"
-                className="text-gray-700 hover:text-[#4a5a3f] transition-colors font-medium text-sm relative group"
+                className={`transition-colors font-medium text-sm relative group ${
+                  pathname === "/" 
+                    ? "text-[#4a5a3f]" 
+                    : "text-gray-700 hover:text-[#4a5a3f]"
+                }`}
               >
                 Inicio
-                <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-[#4a5a3f] transition-all duration-300 group-hover:w-full"></span>
+                <span className={`absolute -bottom-1 left-0 h-0.5 bg-[#4a5a3f] transition-all duration-300 ${
+                  pathname === "/" ? "w-full" : "w-0 group-hover:w-full"
+                }`}></span>
               </Link>
               <Link
                 href="/products"
-                className="text-gray-700 hover:text-[#4a5a3f] transition-colors font-medium text-sm relative group"
+                className={`transition-colors font-medium text-sm relative group ${
+                  pathname === "/products" 
+                    ? "text-[#4a5a3f]" 
+                    : "text-gray-700 hover:text-[#4a5a3f]"
+                }`}
               >
                 Productos
-                <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-[#4a5a3f] transition-all duration-300 group-hover:w-full"></span>
+                <span className={`absolute -bottom-1 left-0 h-0.5 bg-[#4a5a3f] transition-all duration-300 ${
+                  pathname === "/products" ? "w-full" : "w-0 group-hover:w-full"
+                }`}></span>
+              </Link>
+              <Link
+                href="/my-orders"
+                className={`transition-colors font-medium text-sm relative group ${
+                  pathname === "/my-orders" 
+                    ? "text-[#4a5a3f]" 
+                    : "text-gray-700 hover:text-[#4a5a3f]"
+                }`}
+              >
+                Mis Órdenes
+                <span className={`absolute -bottom-1 left-0 h-0.5 bg-[#4a5a3f] transition-all duration-300 ${
+                  pathname === "/my-orders" ? "w-full" : "w-0 group-hover:w-full"
+                }`}></span>
               </Link>
               <Link
                 href="#"
@@ -98,7 +125,6 @@ export default function Header() {
                 className="text-gray-700 hover:text-[#4a5a3f] transition-colors font-medium text-sm relative group"
               >
                 Sobre Nosotros
-                <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-[#4a5a3f] transition-all duration-300 group-hover:w-full"></span>
               </Link>
             </nav>
 
@@ -171,29 +197,6 @@ export default function Header() {
                   </svg>
                 </button>
               )}
-
-              {/* Botón de Mis Órdenes (solo si está logueado) */}
-              {user && (
-                <Link
-                  href="/my-orders"
-                  className="hidden sm:block text-gray-700 hover:text-[#4a5a3f] transition-colors relative"
-                  title="Mis órdenes"
-                >
-                  <svg
-                    className="w-5 h-5"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"
-                    />
-                  </svg>
-                </Link>
-              )}
               
               {/* Botón de Wishlist */}
               <button
@@ -259,7 +262,11 @@ export default function Header() {
                   <div className="space-y-1">
                     <Link
                       href="/"
-                      className="flex items-center gap-3 px-3 py-2 text-gray-700 hover:text-[#4a5a3f] hover:bg-gray-50 transition-colors rounded-lg font-medium"
+                      className={`flex items-center gap-3 px-3 py-2 hover:bg-gray-50 transition-colors rounded-lg font-medium ${
+                        pathname === "/" 
+                          ? "text-[#4a5a3f] bg-green-50" 
+                          : "text-gray-700 hover:text-[#4a5a3f]"
+                      }`}
                       onClick={toggleMobileMenu}
                     >
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -270,7 +277,11 @@ export default function Header() {
                     
                     <Link
                       href="/products"
-                      className="flex items-center gap-3 px-3 py-2 text-gray-700 hover:text-[#4a5a3f] hover:bg-gray-50 transition-colors rounded-lg font-medium"
+                      className={`flex items-center gap-3 px-3 py-2 hover:bg-gray-50 transition-colors rounded-lg font-medium ${
+                        pathname === "/products" 
+                          ? "text-[#4a5a3f] bg-green-50" 
+                          : "text-gray-700 hover:text-[#4a5a3f]"
+                      }`}
                       onClick={toggleMobileMenu}
                     >
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -310,7 +321,11 @@ export default function Header() {
                     <div className="space-y-1">
                       <Link
                         href="/my-orders"
-                        className="flex items-center gap-3 px-3 py-2 text-gray-700 hover:text-[#4a5a3f] hover:bg-gray-50 transition-colors rounded-lg font-medium"
+                        className={`flex items-center gap-3 px-3 py-2 hover:bg-gray-50 transition-colors rounded-lg font-medium ${
+                          pathname === "/my-orders" 
+                            ? "text-[#4a5a3f] bg-green-50" 
+                            : "text-gray-700 hover:text-[#4a5a3f]"
+                        }`}
                         onClick={toggleMobileMenu}
                       >
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
