@@ -10,6 +10,8 @@ import Image from "next/image";
 import Header from "@/components/ui/header";
 import FooterSection from "@/components/ui/footerSection";
 import ShoppingCart from "@/components/ui/shoppingCart";
+import OrderTracking from "@/components/ui/OrderTracking";
+import { BadgeCheck, X, Ban, Clock } from 'lucide-react';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -105,26 +107,62 @@ export default function OrderDetailPage() {
   const getStatusInfo = (status: string) => {
     const statuses = {
       pending: {
-        icon: "⏳",
-        label: "Pendiente",
+        icon: <Clock className="w-4 h-4" />,
+        label: "Pendiente de Pago",
         color: "yellow",
       },
+      payment_approved: {
+        icon: <BadgeCheck className="w-4 h-4" />,
+        label: "Pago Aprobado",
+        color: "green",
+      },
+      processing: {
+        icon: <Clock className="w-4 h-4" />,
+        label: "En Preparación",
+        color: "blue",
+      },
+      ready_to_ship: {
+        icon: <Clock className="w-4 h-4" />,
+        label: "Listo para Enviar",
+        color: "indigo",
+      },
+      shipped: {
+        icon: <Clock className="w-4 h-4" />,
+        label: "Enviado",
+        color: "purple",
+      },
+      in_transit: {
+        icon: <Clock className="w-4 h-4" />,
+        label: "En Tránsito",
+        color: "orange",
+      },
+      delivered: {
+        icon: <BadgeCheck className="w-4 h-4" />,
+        label: "Entregado",
+        color: "emerald",
+      },
       completed: {
-        icon: "✅",
+        icon: <BadgeCheck className="w-4 h-4" />,
         label: "Completado",
         color: "green",
       },
       failed: {
-        icon: "❌",
+        icon: <X className="w-4 h-4" />,
         label: "Fallido",
         description: "Hubo un problema con tu pedido",
         color: "red",
       },
       cancelled: {
-        icon: "🚫",
+        icon: <Ban className="w-4 h-4" />,
         label: "Cancelado",
         description: "Este pedido fue cancelado",
         color: "gray",
+      },
+      returned: {
+        icon: <Ban className="w-4 h-4" />,
+        label: "Devuelto",
+        description: "Este pedido fue devuelto",
+        color: "amber",
       },
     };
 
@@ -214,7 +252,7 @@ export default function OrderDetailPage() {
         {/* Columna principal */}
         <div className="md:col-span-2 space-y-6">
           {/* Productos */}
-          <div className="bg-white rounded-lg shadow-sm p-6">
+          <div className="bg-white rounded-1xl shadow-sm p-6">
             <h3 className="text-lg font-bold mb-4">Productos</h3>
             <div className="space-y-4">
               {order.items?.map((item: any, index: number) => (
@@ -242,8 +280,11 @@ export default function OrderDetailPage() {
             </div>
           </div>
 
+          {/* Seguimiento de Orden */}
+          <OrderTracking orderId={order.id} userId={user.id} />
+
           {/* Información de envío */}
-          <div className="bg-white rounded-lg shadow-sm p-6">
+          <div className="bg-white rounded-1xl shadow-sm p-6">
             <h3 className="text-lg font-bold mb-4">📦 Información de Envío</h3>
             <div className="space-y-2 text-sm">
               <div className="grid grid-cols-3">
@@ -299,7 +340,7 @@ export default function OrderDetailPage() {
         {/* Columna lateral */}
         <div className="space-y-6">
           {/* Resumen */}
-          <div className="bg-white rounded-lg shadow-sm p-6">
+          <div className="bg-white rounded-1xl shadow-sm p-6">
             <h3 className="text-lg font-bold mb-4">Resumen</h3>
             <div className="space-y-3 text-sm">
               <div className="flex justify-between">
@@ -324,8 +365,8 @@ export default function OrderDetailPage() {
           </div>
 
               {/* Información de pago */}
-              <div className="bg-white rounded-lg shadow-sm p-6">
-                <h3 className="text-lg font-bold mb-4">💳 Pago</h3>
+              <div className="bg-white rounded-1xl shadow-sm p-6">
+                <h3 className="text-lg font-bold mb-4"> Pago</h3>
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
                     <span className="text-gray-600">Método:</span>
@@ -352,7 +393,6 @@ export default function OrderDetailPage() {
                 </div>
               </div>
 
-              {/* Botón verificar pago (solo si está pendiente) */}
               {order.payment_status === 'pending' && (
                 <>
                   <button
@@ -377,7 +417,7 @@ export default function OrderDetailPage() {
               {/* Botón volver */}
               <Link
                 href="/my-orders"
-                className="block w-full bg-gray-100 text-center py-3 rounded-lg font-medium hover:bg-gray-200 transition-colors"
+                className="block w-full bg-gray-100 text-center py-3 rounded-1xl font-medium hover:bg-gray-200 transition-colors"
               >
                 ← Volver a mis órdenes
               </Link>

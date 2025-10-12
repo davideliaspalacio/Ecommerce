@@ -87,7 +87,7 @@ export default function MyOrdersPage() {
     const badge = badges[status as keyof typeof badges] || badges.pending;
 
     return (
-      <span className={`px-3 py-1 rounded-full text-xs font-medium ${badge.bg} ${badge.text}`}>
+      <span className={`px-3 py-1 rounded-1xl text-xs font-medium ${badge.bg} ${badge.text}`}>
         {badge.label}
       </span>
     );
@@ -104,7 +104,7 @@ export default function MyOrdersPage() {
     const badge = badges[paymentStatus as keyof typeof badges] || badges.pending;
 
     return (
-      <span className={`px-2 py-1 rounded-full text-xs font-medium ${badge.bg} ${badge.text}`}>
+      <span className={`px-2 py-1 rounded-1xl text-xs font-medium ${badge.bg} ${badge.text}`}>
         💳 {badge.label}
       </span>
     );
@@ -195,7 +195,7 @@ export default function MyOrdersPage() {
 
           {/* Filtros */}
           {orders.length > 0 && (
-            <div className={`bg-white rounded-lg shadow-sm p-6 mb-6 transition-all duration-1000 ease-out delay-300 ${
+            <div className={`bg-white rounded-1xl shadow-sm p-6 mb-6 transition-all duration-1000 ease-out delay-300 ${
               isVisible 
                 ? 'opacity-100 translate-y-0' 
                 : 'opacity-0 translate-y-8'
@@ -215,7 +215,7 @@ export default function MyOrdersPage() {
                     <button
                       key={key}
                       onClick={() => handleFilterChange(key as any)}
-                      className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
+                      className={`px-4 py-2 rounded-1xl text-sm font-medium transition-all duration-200 cursor-pointer ${
                         filter === key
                           ? 'bg-[#4a5a3f] text-white shadow-md'
                           : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
@@ -231,7 +231,7 @@ export default function MyOrdersPage() {
 
           {/* Lista de órdenes */}
           {orders.length === 0 ? (
-            <div className={`bg-white rounded-lg shadow-sm p-12 text-center transition-all duration-1000 ease-out delay-400 ${
+            <div className={`bg-white rounded-1xl shadow-sm p-12 text-center transition-all duration-1000 ease-out delay-400 ${
               isVisible 
                 ? 'opacity-100 translate-y-0' 
                 : 'opacity-0 translate-y-8'
@@ -257,7 +257,7 @@ export default function MyOrdersPage() {
               </p>
               <Link
                 href="/products"
-                className="inline-block bg-[#4a5a3f] text-white px-6 py-3 rounded-lg font-medium hover:bg-[#3d4a34] transition-colors"
+                className="inline-block bg-[#4a5a3f] text-white px-6 py-3 rounded-1xl font-medium hover:bg-[#3d4a34] transition-colors"
               >
                 Ir a la tienda
               </Link>
@@ -306,7 +306,7 @@ export default function MyOrdersPage() {
                 <Link
                   key={order.id}
                   href={`/my-orders/${order.id}`}
-                  className={`block bg-white rounded-lg shadow-sm hover:shadow-lg transition-all duration-300 group cursor-pointer ${
+                  className={`block bg-white rounded-1xl shadow-sm hover:shadow-lg transition-all duration-300 group cursor-pointer ${
                     isVisible 
                       ? 'opacity-100 translate-y-0' 
                       : 'opacity-0 translate-y-8'

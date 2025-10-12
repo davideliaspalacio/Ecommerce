@@ -40,7 +40,7 @@ export interface OrderType {
   tax: number;
   shipping_cost: number;
   total: number;
-  status: 'pending' | 'completed' | 'failed' | 'cancelled';
+  status: 'pending' | 'payment_approved' | 'processing' | 'ready_to_ship' | 'shipped' | 'in_transit' | 'delivered' | 'completed' | 'failed' | 'cancelled' | 'returned';
   payment_method: 'epayco' | 'whatsapp' | 'other';
   payment_status: 'pending' | 'approved' | 'rejected' | 'cancelled';
   epayco_transaction_id?: string;
@@ -67,5 +67,64 @@ export interface CreateOrderType {
   total: number;
   payment_method: 'epayco' | 'whatsapp' | 'other';
   notes?: string;
+}
+
+// Historial de estados de la orden
+export interface OrderStatusHistoryType {
+  id: string;
+  order_id: string;
+  status: string;
+  previous_status?: string;
+  notes?: string;
+  updated_by?: string;
+  updated_by_type: 'customer' | 'admin' | 'system';
+  created_at: string;
+}
+
+// Comunicaciones de la orden
+export interface OrderCommunicationType {
+  id: string;
+  order_id: string;
+  sender_id: string;
+  sender_type: 'customer' | 'admin' | 'system';
+  message: string;
+  is_internal: boolean;
+  is_read: boolean;
+  read_at?: string;
+  attachments?: any;
+  created_at: string;
+}
+
+// Seguimiento de envío
+export interface ShippingTrackingType {
+  id: string;
+  order_id: string;
+  tracking_number: string;
+  carrier: string;
+  carrier_service?: string;
+  estimated_delivery?: string;
+  actual_delivery?: string;
+  status?: string;
+  status_description?: string;
+  location?: string;
+  notes?: string;
+  created_by?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+// Notificaciones de la orden
+export interface OrderNotificationType {
+  id: string;
+  order_id: string;
+  user_id: string;
+  notification_type: 'status_change' | 'message_received' | 'shipping_update' | 'delivery_confirmation';
+  title: string;
+  message: string;
+  is_read: boolean;
+  read_at?: string;
+  sent_via: 'app' | 'email' | 'sms';
+  metadata?: any;
+  created_at: string;
 }
 
