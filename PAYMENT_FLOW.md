@@ -21,7 +21,7 @@ Este proyecto implementa un sistema de pago directo con tarjeta de crédito/déb
 
 ### Endpoints Backend
 
-1. **`/api/epayco/create-order`** - Crear orden
+1. **`/orders`** - Crear orden
    - Crea la orden en la BD con estado `pending`
    - Calcula totales, impuestos y envío
    - Retorna el ID de la orden

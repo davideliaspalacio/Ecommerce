@@ -7,6 +7,7 @@ import { useAuthContext } from "@/contexts/AuthContext";
 import { useCartStore } from "@/store/cartStore";
 import { getCurrentPrice, isDiscountActive, getDiscountPercentage } from "@/components/types/Product";
 import { ShippingInfoType } from "@/components/types/Order";
+import { apiClient } from "@/lib/api-client";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -148,31 +149,40 @@ export default function CheckoutPage() {
       const tax = Math.round(subtotal * 0.19);
       const total = subtotal + tax + SHIPPING_COST;
 
-      const orderResponse = await fetch("/api/epayco/create-order", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          user_id: user.id,
-          user_email: user.email,
-          user_name: user.user_metadata?.full_name || user.email?.split("@")[0],
-          user_phone: user.user_metadata?.phone || "",
-          shipping_info: formData,
-          items: cart,
-          subtotal,
-          tax,
-          shipping_cost: SHIPPING_COST,
-          total,
-          payment_method: "epayco",
-        }),
+      // Preparar items para el nuevo formato
+      const orderItems = cart.map(item => ({
+        product_id: item.product.id,
+        quantity: item.quantity,
+        price: item.final_price || item.price || 0
+      }));
+
+      // Preparar shipping_info para el nuevo formato
+      const shippingInfo = {
+        shipping_full_name: formData.full_name,
+        shipping_address: formData.address,
+        shipping_city: formData.city,
+        shipping_department: formData.department,
+        shipping_postal_code: formData.postal_code,
+        shipping_phone: formData.phone,
+        shipping_email: user.email,
+        shipping_document_type: formData.document_type,
+        shipping_document_number: formData.document_number,
+        shipping_neighborhood: formData.neighborhood,
+        shipping_additional_info: formData.additional_info
+      };
+
+      const orderResponse = await apiClient.createOrder({
+        items: orderItems,
+        shipping_info: shippingInfo,
+        notes: "",
+        status: "pending"
       });
 
-      if (!orderResponse.ok) {
-        throw new Error("Error al crear la orden");
+      if (!orderResponse.success) {
+        throw new Error(orderResponse.error || "Error al crear la orden");
       }
 
-      const { order } = await orderResponse.json();
+      const order = orderResponse.data;
       setCreatedOrderId(order.id);
       
       // Avanzar al paso de pago

@@ -3,7 +3,7 @@ import Image from "next/image"
 import { useUIStore } from "@/store/uiStore"
 import { useCartStore } from "@/store/cartStore"
 import { useProductUrl } from "@/hooks/useProductUrl"
-import { getCurrentPrice, getSavingsAmount, isDiscountActive, getDiscountPercentage } from "@/components/types/Product"
+import { getCurrentPrice, getSavingsAmount, isDiscountActive, getDiscountPercentage, mapProductImages, getMainImage, getAllImages } from "@/components/types/Product"
 import { useWishlistStore } from "@/store/wishlistStore"
 import { useAuthContext } from "@/contexts/AuthContext"
 
@@ -65,6 +65,10 @@ export default function ProductModal() {
       }
 
   if (!selectedProduct) return null
+
+  const productImages = mapProductImages(selectedProduct)
+  const allImages = getAllImages(selectedProduct)
+  const mainImage = getMainImage(selectedProduct)
 
   return (
     <div className={`fixed inset-0 z-[100] bg-black/50 flex items-center justify-center p-4 ${isProductModalClosing ? 'animate-fade-out' : 'animate-fade-in'}`} onClick={closeProductModal}>
@@ -144,47 +148,35 @@ export default function ProductModal() {
         <div className="space-y-4">
           <div className="relative aspect-square bg-gray-100">
             <Image
-              src={currentImageIndex === 0 ? selectedProduct.image : (selectedProduct.image_back || selectedProduct.image)}
+              src={allImages[currentImageIndex] || mainImage || "/placeholder.svg"}
               alt={selectedProduct.name}
               fill
               className="object-cover"
             />
           </div>
           
-          <div className={`grid gap-4 ${selectedProduct.image_back ? 'grid-cols-2' : 'grid-cols-1'}`}>
-            {selectedProduct.image_back && (
-              <button
-                onClick={() => setCurrentImageIndex(1)}
-                className={`relative aspect-square bg-gray-100 border-2 width-[50%] ${
-                  currentImageIndex === 1 ? "border-black" : "border-transparent"
-                }`}
-              >
-                <Image
-                  src={selectedProduct.image_back}
-                  alt="Espalda"
-                  fill
-                  className="object-cover"
-                />
-              </button>
-            )}
-            {selectedProduct.image && (
-              <button
-                onClick={() => setCurrentImageIndex(0)}
-                className={`relative aspect-square bg-gray-100 border-2 width-[50%] ${
-                  currentImageIndex === 1 ? "border-black" : "border-transparent"
-                }`}
-              >
-                <Image
-                  src={selectedProduct.image}
-                  alt="Espalda"
-                  fill
-                  className="object-cover"
-                />
-                
-              </button>
-            )}
-
-          </div>
+          {allImages.length > 1 && (
+            <div className={`grid gap-4 ${allImages.length <= 2 ? 'grid-cols-2' : allImages.length <= 4 ? 'grid-cols-2' : 'grid-cols-4'}`}>
+              {allImages.map((image, index) => (
+                <button
+                  key={index}
+                  onClick={() => setCurrentImageIndex(index)}
+                  className={`relative aspect-square bg-gray-100 border-2 transition-all duration-200 ${
+                    currentImageIndex === index 
+                      ? "border-[#4a5a3f] scale-105" 
+                      : "border-transparent hover:border-gray-300 hover:scale-105"
+                  }`}
+                >
+                  <Image
+                    src={image}
+                    alt={`Vista ${index + 1}`}
+                    fill
+                    className="object-cover"
+                  />
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Información del producto */}

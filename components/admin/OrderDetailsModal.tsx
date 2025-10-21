@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { createClient } from "@supabase/supabase-js";
+import { apiClient } from "@/lib/api-client";
 import { OrderType, OrderStatusHistoryType, OrderCommunicationType, ShippingTrackingType } from "@/components/types/Order";
 import { 
   XCircle, 
@@ -24,6 +25,16 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
+
+// Función para obtener información del remitente
+const getSenderInfo = (senderType: string) => {
+  const senderMap = {
+    customer: { label: "Cliente", color: "text-blue-600", bgColor: "bg-blue-100" },
+    admin: { label: "Soporte", color: "text-green-600", bgColor: "bg-green-100" },
+    system: { label: "Sistema", color: "text-gray-600", bgColor: "bg-gray-100" }
+  };
+  return senderMap[senderType as keyof typeof senderMap] || senderMap.system;
+};
 
 interface OrderDetailsModalProps {
   order: OrderType | null;
@@ -78,18 +89,7 @@ export default function OrderDetailsModal({
     }
   }, [communications, activeTab]);
 
-  // Auto-refresh cada 30 segundos cuando el modal está abierto
-  useEffect(() => {
-    if (!isOpen) return;
-    
-    const interval = setInterval(() => {
-      if (order) {
-        fetchOrderDetails(true);
-      }
-    }, 30000);
-
-    return () => clearInterval(interval);
-  }, [isOpen, order]);
+  // Auto-refresh removido - usar botón de refresh manual
 
   const fetchOrderDetails = async (isRefresh = false) => {
     if (!order) return;
@@ -101,26 +101,41 @@ export default function OrderDetailsModal({
         setLoading(true);
       }
 
-      // Fetch status history
-      const { data: history } = await supabase
-        .from("order_status_history")
-        .select("*")
-        .eq("order_id", order.id)
-        .order("created_at", { ascending: false });
+      // Fetch status history using admin timeline endpoint
+      const historyResponse = await apiClient.getAdminOrderStatusHistoryByOrder(order.id, 1, 100);
+      console.log('Admin status history response:', historyResponse);
+      
+      // Manejar tanto formato paginado como array directo
+      const history = historyResponse.success && historyResponse.data 
+        ? (Array.isArray(historyResponse.data) ? historyResponse.data : historyResponse.data.data || [])
+        : [];
+      
+      console.log('Admin status history data:', history);
 
       // Fetch communications
-      const { data: comms } = await supabase
-        .from("order_communications")
-        .select("*")
-        .eq("order_id", order.id)
-        .order("created_at", { ascending: false });
+      const commsResponse = await apiClient.getAdminOrderCommunicationsByOrder(order.id, 1, 100);
+      console.log('Admin communications response:', commsResponse);
+      
+      // Manejar tanto formato paginado como array directo
+      const commsData = commsResponse.success && commsResponse.data 
+        ? (Array.isArray(commsResponse.data) ? commsResponse.data : commsResponse.data.data || [])
+        : [];
+      
+      const comms = commsData.map(comm => ({
+        ...comm,
+        read_at: comm.read_at || undefined
+      }));
+      
+      console.log('Admin communications data:', comms);
 
-      // Fetch shipping info
-      const { data: shipping } = await supabase
-        .from("shipping_tracking")
-        .select("*")
-        .eq("order_id", order.id)
-        .order("created_at", { ascending: false });
+      const shippingResponse = await apiClient.getOrderTracking(order.id);
+      console.log('Shipping tracking response:', shippingResponse);
+      
+      const shipping = shippingResponse.success && shippingResponse.data 
+        ? (Array.isArray(shippingResponse.data) ? shippingResponse.data : [shippingResponse.data])
+        : [];
+      
+      console.log('Shipping tracking data:', shipping);
 
       setStatusHistory(history || []);
       setCommunications(comms || []);
@@ -323,49 +338,89 @@ export default function OrderDetailsModal({
                   </div>
 
                   {/* Cambiar estado */}
-                  <div>
-                    <h4 className="font-medium mb-3">Cambiar Estado</h4>
-                    <div className="space-y-3">
-                      <select
-                        value={newStatus}
-                        onChange={(e) => setNewStatus(e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#4a5a3f] focus:border-transparent"
-                      >
-                        <option value="">Seleccionar nuevo estado</option>
-                        <option value="pending">Pendiente de Pago</option>
-                        <option value="payment_approved">Pago Aprobado</option>
-                        <option value="processing">En Preparación</option>
-                        <option value="ready_to_ship">Listo para Enviar</option>
-                        <option value="shipped">Enviado</option>
-                        <option value="in_transit">En Tránsito</option>
-                        <option value="delivered">Entregado</option>
-                        <option value="completed">Completado</option>
-                        <option value="failed">Fallido</option>
-                        <option value="cancelled">Cancelado</option>
-                        <option value="returned">Devuelto</option>
-                      </select>
-                      <textarea
-                        value={statusNotes}
-                        onChange={(e) => setStatusNotes(e.target.value)}
-                        placeholder="Notas adicionales (opcional)"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#4a5a3f] focus:border-transparent"
-                        rows={2}
-                      />
-                      <button
-                        onClick={async () => {
-                          if (newStatus) {
-                            await onStatusUpdate(order.id, newStatus, statusNotes);
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    <div className="flex items-center justify-between mb-4">
+                      <h4 className="text-lg font-semibold text-gray-800">Cambiar Estado</h4>
+                      <div className="flex items-center space-x-2">
+                        <div className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusInfo(order.status).bgColor} ${getStatusInfo(order.status).color}`}>
+                          Estado Actual: {getStatusInfo(order.status).label}
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Nuevo Estado
+                        </label>
+                        <select
+                          value={newStatus || order.status}
+                          onChange={(e) => setNewStatus(e.target.value)}
+                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#4a5a3f] focus:border-transparent bg-white"
+                        >
+                          <option value={order.status} disabled>
+                            Estado Actual: {getStatusInfo(order.status).label}
+                          </option>
+                          <option value="pending">Pendiente de Pago</option>
+                          <option value="payment_approved">Pago Aprobado</option>
+                          <option value="processing">En Preparación</option>
+                          <option value="ready_to_ship">Listo para Enviar</option>
+                          <option value="shipped">Enviado</option>
+                          <option value="in_transit">En Tránsito</option>
+                          <option value="delivered">Entregado</option>
+                          <option value="completed">Completado</option>
+                          <option value="failed">Fallido</option>
+                          <option value="cancelled">Cancelado</option>
+                          <option value="returned">Devuelto</option>
+                        </select>
+                        <p className="text-xs text-gray-500 mt-1">
+                          Selecciona un estado diferente al actual para actualizar la orden
+                        </p>
+                      </div>
+                      
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Notas Adicionales
+                        </label>
+                        <textarea
+                          value={statusNotes}
+                          onChange={(e) => setStatusNotes(e.target.value)}
+                          placeholder="Agrega notas sobre el cambio de estado (opcional)"
+                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#4a5a3f] focus:border-transparent bg-white"
+                          rows={3}
+                        />
+                        <p className="text-xs text-gray-500 mt-1">
+                          Las notas aparecerán en el historial de la orden
+                        </p>
+                      </div>
+                      
+                      <div className="flex space-x-3">
+                        <button
+                          onClick={async () => {
+                            if (newStatus && newStatus !== order.status) {
+                              await onStatusUpdate(order.id, newStatus, statusNotes);
+                              setNewStatus("");
+                              setStatusNotes("");
+                              // Actualizar solo los datos del modal
+                              fetchOrderDetails(true);
+                            }
+                          }}
+                          disabled={!newStatus || newStatus === order.status}
+                          className="flex-1 px-6 py-3 bg-[#4a5a3f] text-white rounded-lg hover:bg-[#3d4a34] disabled:opacity-50 disabled:cursor-not-allowed font-medium transition-colors"
+                        >
+                          {newStatus && newStatus !== order.status ? 'Actualizar Estado' : 'Selecciona un estado diferente'}
+                        </button>
+                        
+                        <button
+                          onClick={() => {
                             setNewStatus("");
                             setStatusNotes("");
-                            // Actualizar solo los datos del modal
-                            fetchOrderDetails(true);
-                          }
-                        }}
-                        disabled={!newStatus}
-                        className="w-full px-4 py-2 bg-[#4a5a3f] text-white rounded-lg hover:bg-[#3d4a34] disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        Actualizar Estado
-                      </button>
+                          }}
+                          className="px-4 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium transition-colors"
+                        >
+                          Limpiar
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -373,43 +428,101 @@ export default function OrderDetailsModal({
 
               {/* Historial Tab */}
               {activeTab === 'history' && (
-                <div className="space-y-4">
-                  <h4 className="font-medium mb-4">Historial de Estados</h4>
+                <div className="space-y-6">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-lg font-semibold text-gray-800">Historial de Estados</h4>
+                    <div className="flex items-center space-x-2">
+                      <div className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusInfo(order.status).bgColor} ${getStatusInfo(order.status).color}`}>
+                        Estado Actual: {getStatusInfo(order.status).label}
+                      </div>
+                    </div>
+                  </div>
+                  
                   {statusHistory.length > 0 ? (
-                    <div className="space-y-3">
-                      {statusHistory.map((entry, index) => {
-                        const entryStatusInfo = getStatusInfo(entry.status);
-                        const EntryIcon = entryStatusInfo.icon;
-                        return (
-                          <div key={index} className="flex items-start space-x-3 p-3 bg-gray-50 rounded-lg">
-                            <div className={`w-8 h-8 ${entryStatusInfo.bgColor} rounded-full flex items-center justify-center flex-shrink-0`}>
-                              <EntryIcon className={`w-4 h-4 ${entryStatusInfo.color}`} />
-                            </div>
-                            <div className="flex-1">
-                              <div className="flex items-center justify-between">
-                                <span className={`font-medium ${entryStatusInfo.color}`}>
-                                  {entryStatusInfo.label}
-                                </span>
-                                <span className="text-sm text-gray-500">
-                                  {new Date(entry.created_at).toLocaleDateString("es-CO", {
-                                    day: "2-digit",
-                                    month: "2-digit",
-                                    year: "numeric",
-                                    hour: "2-digit",
-                                    minute: "2-digit"
-                                  })}
-                                </span>
+                    <div className="relative">
+                      {/* Timeline vertical */}
+                      <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-gray-200"></div>
+                      
+                      <div className="space-y-6">
+                        {statusHistory.map((entry, index) => {
+                          const entryStatusInfo = getStatusInfo(entry.status);
+                          const EntryIcon = entryStatusInfo.icon;
+                          const isLast = index === statusHistory.length - 1;
+                          
+                          return (
+                            <div key={index} className="relative flex items-start space-x-4">
+                              {/* Icono del estado */}
+                              <div className={`relative z-10 w-8 h-8 ${entryStatusInfo.bgColor} rounded-full flex items-center justify-center flex-shrink-0 border-2 border-white shadow-sm`}>
+                                <EntryIcon className={`w-4 h-4 ${entryStatusInfo.color}`} />
                               </div>
-                              {entry.notes && (
-                                <p className="text-sm text-gray-600 mt-1">{entry.notes}</p>
-                              )}
+                              
+                              {/* Contenido del historial */}
+                              <div className="flex-1 min-w-0 bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
+                                <div className="flex items-center justify-between mb-2">
+                                  <div className="flex items-center space-x-2">
+                                    <span className={`font-semibold text-sm ${entryStatusInfo.color}`}>
+                                      {entryStatusInfo.label}
+                                    </span>
+                                    {isLast && (
+                                      <span className="px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-full">
+                                        Actual
+                                      </span>
+                                    )}
+                                  </div>
+                                  <div className="text-right">
+                                    <div className="text-sm font-medium text-gray-900">
+                                      {new Date(entry.created_at).toLocaleDateString("es-CO", {
+                                        day: "2-digit",
+                                        month: "2-digit",
+                                        year: "numeric"
+                                      })}
+                                    </div>
+                                    <div className="text-xs text-gray-500">
+                                      {new Date(entry.created_at).toLocaleTimeString("es-CO", {
+                                        hour: "2-digit",
+                                        minute: "2-digit"
+                                      })}
+                                    </div>
+                                  </div>
+                                </div>
+                                
+                                {entry.notes && (
+                                  <div className="mt-2 p-3 bg-gray-50 rounded-md">
+                                    <p className="text-sm text-gray-700">{entry.notes}</p>
+                                  </div>
+                                )}
+                                
+                                <div className="mt-3 flex items-center justify-between">
+                                  <div className="flex items-center space-x-2">
+                                    <div className={`w-2 h-2 rounded-full ${
+                                      entry.updated_by_type === 'admin' ? 'bg-blue-500' : 
+                                      entry.updated_by_type === 'customer' ? 'bg-green-500' : 'bg-gray-500'
+                                    }`}></div>
+                                    <span className="text-xs text-gray-500">
+                                      {entry.updated_by_type === 'admin' ? 'Actualizado por Soporte' : 
+                                       entry.updated_by_type === 'customer' ? 'Actualizado por Cliente' : 'Actualizado por Sistema'}
+                                    </span>
+                                  </div>
+                                  
+                                  {entry.previous_status && (
+                                    <div className="text-xs text-gray-400">
+                                      Desde: {getStatusInfo(entry.previous_status).label}
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
                             </div>
-                          </div>
-                        );
-                      })}
+                          );
+                        })}
+                      </div>
                     </div>
                   ) : (
-                    <p className="text-gray-500 text-center py-8">No hay historial de estados</p>
+                    <div className="text-center py-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
+                      <Clock className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                      <h3 className="text-lg font-medium text-gray-900 mb-2">No hay historial de estados</h3>
+                      <p className="text-gray-500 mb-4">Los cambios de estado de la orden aparecerán aquí</p>
+                      <p className="text-sm text-gray-400">El historial se actualiza automáticamente cuando cambias el estado</p>
+                    </div>
                   )}
                 </div>
               )}
@@ -422,40 +535,49 @@ export default function OrderDetailsModal({
                   {/* Lista de mensajes con scroll */}
                   <div 
                     ref={messagesContainerRef}
-                    className="flex-1 overflow-y-auto space-y-3 pr-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100"
+                    className="flex-1 overflow-y-auto space-y-4 pr-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100"
                   >
                     {communications.length > 0 ? (
                       <>
-                        {communications.map((comm, index) => (
-                          <div key={index} className={`p-4 rounded-lg shadow-sm ${
-                            comm.is_internal 
-                              ? 'bg-blue-50 border-l-4 border-blue-400' 
-                              : 'bg-gray-50 border-l-4 border-gray-400'
-                          }`}>
-                            <div className="flex items-center justify-between mb-2">
-                              <div className="flex items-center space-x-2">
-                                <MessageCircle className={`w-4 h-4 ${
-                                  comm.is_internal ? 'text-blue-600' : 'text-gray-600'
-                                }`} />
-                                <span className={`text-sm font-medium ${
-                                  comm.is_internal ? 'text-blue-700' : 'text-gray-700'
-                                }`}>
-                                  {comm.is_internal ? 'Mensaje Interno' : 'Mensaje al Cliente'}
-                                </span>
+                        {communications.map((comm) => {
+                          const senderInfo = getSenderInfo(comm.sender_type);
+                          const isAdmin = comm.sender_type === 'admin';
+                          
+                          return (
+                            <div key={comm.id} className={`flex ${isAdmin ? 'justify-end' : 'justify-start'}`}>
+                              <div className={`max-w-xs lg:max-w-md px-4 py-3 rounded-lg shadow-sm ${
+                                isAdmin 
+                                  ? 'bg-[#4a5a3f] text-white' 
+                                  : 'bg-gray-100 text-gray-900'
+                              }`}>
+                                <div className="flex items-center mb-2">
+                                  <span className={`text-xs font-medium ${isAdmin ? 'text-blue-200' : senderInfo.color}`}>
+                                    {isAdmin ? 'Soporte' : senderInfo.label}
+                                  </span>
+                                  <span className={`text-xs ml-2 ${isAdmin ? 'text-blue-200' : 'text-gray-500'}`}>
+                                    {new Date(comm.created_at).toLocaleDateString("es-CO", {
+                                      day: "2-digit",
+                                      month: "2-digit",
+                                      hour: "2-digit",
+                                      minute: "2-digit"
+                                    })}
+                                  </span>
+                                </div>
+                                <p className="text-sm leading-relaxed">{comm.message}</p>
+                                {comm.attachments && (
+                                  <div className="mt-2 text-xs opacity-75">
+                                    📎 Archivo adjunto
+                                  </div>
+                                )}
+                                {comm.is_internal && (
+                                  <div className="mt-2 text-xs opacity-75">
+                                    🔒 Mensaje interno
+                                  </div>
+                                )}
                               </div>
-                              <span className="text-xs text-gray-500">
-                                {new Date(comm.created_at).toLocaleDateString("es-CO", {
-                                  day: "2-digit",
-                                  month: "2-digit",
-                                  year: "numeric",
-                                  hour: "2-digit",
-                                  minute: "2-digit"
-                                })}
-                              </span>
                             </div>
-                            <p className="text-sm text-gray-700 leading-relaxed">{comm.message}</p>
-                          </div>
-                        ))}
+                          );
+                        })}
                         <div ref={messagesEndRef} />
                       </>
                     ) : (
@@ -483,10 +605,18 @@ export default function OrderDetailsModal({
                         onKeyDown={async (e) => {
                           if (e.key === 'Enter' && e.ctrlKey) {
                             if (newMessage.trim()) {
-                              await onSendMessage(order.id, newMessage.trim());
-                              setNewMessage("");
-                              // Actualizar solo los datos del modal
-                              fetchOrderDetails(true);
+                              try {
+                                const response = await apiClient.sendAdminOrderMessage(order.id, newMessage.trim(), false);
+                                if (response.success) {
+                                  setNewMessage("");
+                                  fetchOrderDetails(true);
+                                } else {
+                                  alert("Error al enviar el mensaje");
+                                }
+                              } catch (error) {
+                                console.error("Error sending message:", error);
+                                alert("Error al enviar el mensaje");
+                              }
                             }
                           }
                         }}
@@ -496,10 +626,18 @@ export default function OrderDetailsModal({
                         <button
                           onClick={async () => {
                             if (newMessage.trim()) {
-                              await onSendMessage(order.id, newMessage.trim());
-                              setNewMessage("");
-                              // Actualizar solo los datos del modal
-                              fetchOrderDetails(true);
+                              try {
+                                const response = await apiClient.sendAdminOrderMessage(order.id, newMessage.trim(), false);
+                                if (response.success) {
+                                  setNewMessage("");
+                                  fetchOrderDetails(true);
+                                } else {
+                                  alert("Error al enviar el mensaje");
+                                }
+                              } catch (error) {
+                                console.error("Error sending message:", error);
+                                alert("Error al enviar el mensaje");
+                              }
                             }
                           }}
                           disabled={!newMessage.trim()}
@@ -516,43 +654,121 @@ export default function OrderDetailsModal({
 
               {/* Envío Tab */}
               {activeTab === 'shipping' && (
-                <div className="space-y-4">
-                  <h4 className="font-medium mb-4">Información de Envío</h4>
+                <div className="space-y-6">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-lg font-semibold text-gray-800">Información de Envío</h4>
+                    <div className="text-sm text-gray-500">
+                      {shippingInfo.length} {shippingInfo.length === 1 ? 'registro' : 'registros'} de envío
+                    </div>
+                  </div>
+                  
                   {shippingInfo.length > 0 ? (
-                    <div className="space-y-3">
+                    <div className="space-y-4">
                       {shippingInfo.map((info, index) => (
-                        <div key={index} className="p-3 bg-gray-50 rounded-lg">
-                          <div className="flex items-center justify-between mb-2">
-                            <span className="font-medium text-gray-900">
-                              {info.carrier}
-                            </span>
-                            <span className="text-sm text-gray-500">
-                              {new Date(info.created_at).toLocaleDateString("es-CO", {
-                                day: "2-digit",
-                                month: "2-digit",
-                                year: "numeric",
-                                hour: "2-digit",
-                                minute: "2-digit"
-                              })}
-                            </span>
+                        <div key={info.id || index} className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+                          <div className="flex items-center justify-between mb-4">
+                            <div className="flex items-center space-x-3">
+                              <div className="w-10 h-10 bg-[#4a5a3f] rounded-full flex items-center justify-center">
+                                <Truck className="w-5 h-5 text-white" />
+                              </div>
+                              <div>
+                                <h5 className="font-semibold text-gray-900">{info.carrier}</h5>
+                                <p className="text-sm text-gray-500">Registro #{index + 1}</p>
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <div className="text-sm font-medium text-gray-900">
+                                {new Date(info.created_at).toLocaleDateString("es-CO", {
+                                  day: "2-digit",
+                                  month: "2-digit",
+                                  year: "numeric"
+                                })}
+                              </div>
+                              <div className="text-xs text-gray-500">
+                                {new Date(info.created_at).toLocaleTimeString("es-CO", {
+                                  hour: "2-digit",
+                                  minute: "2-digit"
+                                })}
+                              </div>
+                            </div>
                           </div>
-                          <div className="text-sm text-gray-600 space-y-1">
-                            <p><span className="font-medium">Número de seguimiento:</span> {info.tracking_number}</p>
-                            {info.carrier_service && (
-                              <p><span className="font-medium">Servicio:</span> {info.carrier_service}</p>
-                            )}
-                            {info.estimated_delivery && (
-                              <p><span className="font-medium">Entrega estimada:</span> {new Date(info.estimated_delivery).toLocaleDateString("es-CO")}</p>
-                            )}
-                            {info.notes && (
-                              <p><span className="font-medium">Notas:</span> {info.notes}</p>
-                            )}
+                          
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="space-y-3">
+                              <div>
+                                <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Número de Seguimiento</label>
+                                <p className="text-sm font-mono bg-gray-50 px-3 py-2 rounded border">{info.tracking_number}</p>
+                              </div>
+                              
+                              {info.carrier_service && (
+                                <div>
+                                  <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Servicio</label>
+                                  <p className="text-sm">{info.carrier_service}</p>
+                                </div>
+                              )}
+                              
+                              {info.status && (
+                                <div>
+                                  <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Estado</label>
+                                  <p className="text-sm">{info.status}</p>
+                                </div>
+                              )}
+                            </div>
+                            
+                            <div className="space-y-3">
+                              {info.estimated_delivery && (
+                                <div>
+                                  <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Entrega Estimada</label>
+                                  <p className="text-sm">{new Date(info.estimated_delivery).toLocaleDateString("es-CO")}</p>
+                                </div>
+                              )}
+                              
+                              {info.actual_delivery && (
+                                <div>
+                                  <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Entrega Real</label>
+                                  <p className="text-sm text-green-600 font-medium">{new Date(info.actual_delivery).toLocaleDateString("es-CO")}</p>
+                                </div>
+                              )}
+                              
+                              {info.location && (
+                                <div>
+                                  <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Ubicación</label>
+                                  <p className="text-sm">{info.location}</p>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                          
+                          {info.status_description && (
+                            <div className="mt-4 p-3 bg-blue-50 rounded-md">
+                              <label className="text-xs font-medium text-blue-700 uppercase tracking-wide">Descripción del Estado</label>
+                              <p className="text-sm text-blue-900 mt-1">{info.status_description}</p>
+                            </div>
+                          )}
+                          
+                          {info.notes && (
+                            <div className="mt-4 p-3 bg-gray-50 rounded-md">
+                              <label className="text-xs font-medium text-gray-700 uppercase tracking-wide">Notas</label>
+                              <p className="text-sm text-gray-900 mt-1">{info.notes}</p>
+                            </div>
+                          )}
+                          
+                          <div className="mt-4 pt-3 border-t border-gray-200">
+                            <div className="flex items-center justify-between text-xs text-gray-500">
+                              <span>ID: {info.id.substring(0, 8)}...</span>
+                              <span>Actualizado: {new Date(info.updated_at).toLocaleDateString("es-CO")}</span>
+                            </div>
                           </div>
                         </div>
                       ))}
                     </div>
                   ) : (
-                    <p className="text-gray-500 text-center py-8">No hay información de envío</p>
+                    <div className="text-center py-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
+                      <Truck className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                      <h3 className="text-lg font-medium text-gray-900 mb-2">No hay información de envío</h3>
+                      <p className="text-gray-500 mb-4">Los datos de seguimiento aparecerán aquí cuando se agreguen</p>
+                      <p className="text-sm text-gray-400">Usa el formulario de abajo para agregar información de envío</p>
+                    </div>
                   )}
                   {/* Agregar información de envío */}
                   <div className="bg-gray-50 rounded-lg p-4">

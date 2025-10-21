@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { supabase } from '@/lib/supabase'
+import { apiClient } from '@/lib/api-client'
 import { ProductType, CreateProductType, ProductFilters } from '@/components/types/Product'
 
 export function useProducts() {
@@ -7,46 +7,66 @@ export function useProducts() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
+  // Cargar productos al inicializar
+  useEffect(() => {
+    fetchProducts()
+  }, [])
+
   const fetchProducts = async (filters?: ProductFilters) => {
     try {
       setLoading(true)
       setError(null)
 
-      let query = supabase
-        .from('products')
-        .select('*')
-        .eq('status', 'active')
-        .order('created_at', { ascending: false })
+      let response
 
+      // Usar endpoints específicos según los filtros
       if (filters?.category) {
-        query = query.eq('category', filters.category)
-      }
-      if (filters?.gender) {
-        query = query.eq('gender', filters.gender)
-      }
-      if (filters?.min_price) {
-        query = query.gte('price', filters.min_price)
-      }
-      if (filters?.max_price) {
-        query = query.lte('price', filters.max_price)
-      }
-      if (filters?.search) {
-        query = query.or(`name.ilike.%${filters.search}%,description.ilike.%${filters.search}%`)
+        response = await apiClient.getProductsByCategory(
+          filters.category,
+          filters?.offset ? Math.floor(filters.offset / (filters?.limit || 8)) + 1 : 1,
+          filters?.limit || 8
+        )
+      } else if (filters?.gender) {
+        if (filters?.search) {
+          response = await apiClient.getProductsByGenderWithSearch(
+            filters.gender,
+            filters.search,
+            filters?.offset ? Math.floor(filters.offset / (filters?.limit || 8)) + 1 : 1,
+            filters?.limit || 8
+          )
+        } else {
+          response = await apiClient.getProductsByGender(
+            filters.gender,
+            filters?.offset ? Math.floor(filters.offset / (filters?.limit || 8)) + 1 : 1,
+            filters?.limit || 8
+          )
+        }
+      } else if (filters?.min_price && filters?.max_price) {
+        response = await apiClient.getProductsByPriceRange(
+          filters.min_price,
+          filters.max_price,
+          filters?.offset ? Math.floor(filters.offset / (filters?.limit || 8)) + 1 : 1,
+          filters?.limit || 8
+        )
+      } else {
+        // Endpoint general con parámetros
+        response = await apiClient.getProducts({
+          page: filters?.offset ? Math.floor(filters.offset / (filters?.limit || 8)) + 1 : 1,
+          limit: filters?.limit || 8,
+          search: filters?.search,
+          minPrice: filters?.min_price,
+          maxPrice: filters?.max_price,
+          gender: filters?.gender
+        })
       }
 
-      // Aplicar paginación si se proporcionan los parámetros
-      if (filters?.limit) {
-        const offset = filters.offset || 0
-        query = query.range(offset, offset + filters.limit - 1)
+      if (!response.success) {
+        throw new Error(response.error || 'Error al cargar los productos')
       }
 
-      const { data, error } = await query
-
-      if (error) {
-        throw error
-      }
-
-      setProducts(data || [])
+      // El backend devuelve los productos directamente en data
+      console.log('Productos recibidos:', response.data)
+      setProducts(response.data || [])
     } catch (err: any) {
       console.error('Error fetching products:', err)
       setError(err.message || 'Error al cargar los productos')
@@ -58,17 +78,13 @@ export function useProducts() {
   // Obtener un producto por ID
   const fetchProductById = async (id: string): Promise<ProductType | null> => {
     try {
-      const { data, error } = await supabase
-        .from('products')
-        .select('*')
-        .eq('id', id)
-        .single()
+      const response = await apiClient.getProduct(id)
 
-      if (error) {
-        throw error
+      if (!response.success) {
+        throw new Error(response.error || 'Error al cargar el producto')
       }
 
-      return data
+      return response.data
     } catch (err: any) {
       console.error('Error fetching product:', err)
       setError(err.message || 'Error al cargar el producto')
@@ -81,25 +97,15 @@ export function useProducts() {
     try {
       setError(null)
       
-      
-      const response = await fetch('/api/products/create', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(productData),
-      })
+      const response = await apiClient.createProduct(productData)
 
-      const result = await response.json()
-
-      if (!response.ok) {
-        throw new Error(result.error || 'Error al crear el producto')
+      if (!response.success) {
+        throw new Error(response.error || 'Error al crear el producto')
       }
 
-      
       // Actualizar la lista de productos
-      setProducts(prev => [result.data, ...prev])
-      return { data: result.data, error: null }
+      setProducts(prev => [response.data, ...prev])
+      return { data: response.data, error: null }
     } catch (err: any) {
       const errorMessage = err.message || 'Error al crear el producto'
       console.error('Error creating product:', err)
@@ -113,27 +119,17 @@ export function useProducts() {
     try {
       setError(null)
       
-      
-      const response = await fetch('/api/products/update', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ id, updates }),
-      })
+      const response = await apiClient.updateProduct(id, updates)
 
-      const result = await response.json()
-
-      if (!response.ok) {
-        throw new Error(result.error || 'Error al actualizar el producto')
+      if (!response.success) {
+        throw new Error(response.error || 'Error al actualizar el producto')
       }
-
 
       // Actualizar la lista de productos
       setProducts(prev => 
-        prev.map(product => product.id === id ? result.data : product)
+        prev.map(product => product.id === id ? response.data : product)
       )
-      return { data: result.data, error: null }
+      return { data: response.data, error: null }
     } catch (err: any) {
       const errorMessage = err.message || 'Error al actualizar el producto'
       setError(errorMessage)
@@ -146,17 +142,11 @@ export function useProducts() {
     try {
       setError(null)
       
-      
-      const response = await fetch(`/api/products/delete?id=${id}`, {
-        method: 'DELETE',
-      })
+      const response = await apiClient.deleteProduct(id)
 
-      const result = await response.json()
-
-      if (!response.ok) {
-        throw new Error(result.error || 'Error al eliminar el producto')
+      if (!response.success) {
+        throw new Error(response.error || 'Error al eliminar el producto')
       }
-
 
       // Remover de la lista de productos
       setProducts(prev => prev.filter(product => product.id !== id))
@@ -170,31 +160,81 @@ export function useProducts() {
 
   // Obtener productos por categoría
   const fetchProductsByCategory = async (category: string) => {
-    await fetchProducts({ category, limit: 8, offset: 0 })
+    try {
+      setLoading(true)
+      setError(null)
+
+      const response = await apiClient.getProductsByCategory(category, 1, 8)
+
+      if (!response.success) {
+        throw new Error(response.error || 'Error al cargar productos por categoría')
+      }
+
+      setProducts(response.data || [])
+    } catch (err: any) {
+      console.error('Error fetching products by category:', err)
+      setError(err.message || 'Error al cargar productos por categoría')
+    } finally {
+      setLoading(false)
+    }
   }
 
   // Obtener productos por género
   const fetchProductsByGender = async (gender: string) => {
-    await fetchProducts({ gender, limit: 8, offset: 0 })
+    try {
+      setLoading(true)
+      setError(null)
+
+      const response = await apiClient.getProductsByGender(gender, 1, 8)
+
+      if (!response.success) {
+        throw new Error(response.error || 'Error al cargar productos por género')
+      }
+
+      setProducts(response.data || [])
+    } catch (err: any) {
+      console.error('Error fetching products by gender:', err)
+      setError(err.message || 'Error al cargar productos por género')
+    } finally {
+      setLoading(false)
+    }
   }
 
   // Buscar productos
   const searchProducts = async (searchTerm: string) => {
-    await fetchProducts({ search: searchTerm, limit: 8, offset: 0 })
+    try {
+      setLoading(true)
+      setError(null)
+
+      const response = await apiClient.getProducts({
+        search: searchTerm,
+        page: 1,
+        limit: 8
+      })
+
+      if (!response.success) {
+        throw new Error(response.error || 'Error al buscar productos')
+      }
+
+      setProducts(response.data || [])
+    } catch (err: any) {
+      console.error('Error searching products:', err)
+      setError(err.message || 'Error al buscar productos')
+    } finally {
+      setLoading(false)
+    }
   }
 
   // Obtener estadísticas de productos (solo admin)
   const fetchProductStats = async () => {
     try {
-      const { data, error } = await supabase
-        .from('product_stats')
-        .select('*')
+      const response = await apiClient.getAdminAnalytics()
 
-      if (error) {
-        throw error
+      if (!response.success) {
+        throw new Error(response.error || 'Error al cargar estadísticas')
       }
 
-      return { data, error: null }
+      return { data: response.data, error: null }
     } catch (err: any) {
       const errorMessage = err.message || 'Error al cargar estadísticas'
       setError(errorMessage)

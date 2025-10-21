@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { createClient } from "@supabase/supabase-js";
+import { apiClient } from "@/lib/api-client";
 import {
   OrderType,
   OrderStatusHistoryType,
@@ -30,11 +30,6 @@ import {
   Phone,
 } from "lucide-react";
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
-
 export default function AdminOrders() {
   const [orders, setOrders] = useState<OrderType[]>([]);
   const [filteredOrders, setFilteredOrders] = useState<OrderType[]>([]);
@@ -56,54 +51,14 @@ export default function AdminOrders() {
     try {
       setLoading(true);
 
-      // Debug: Verificar perfil del usuario
-      const { data: profile, error: profileError } = await supabase
-        .from("profiles")
-        .select("id, email, role, status")
-        .eq("id", (await supabase.auth.getUser()).data.user?.id)
-        .single();
+      const response = await apiClient.getAdminOrders();
 
-      console.log("Profile data:", profile);
-
-      // Verificar si el usuario es administrador
-      const { data: isAdmin, error: adminError } = await supabase.rpc(
-        "is_order_admin"
-      );
-
-      console.log("Is admin:", isAdmin, "Admin error:", adminError);
-
-      if (adminError) {
-        console.error("Error checking admin status:", adminError);
-        // No lanzar error, continuar sin verificación de admin por ahora
-        console.log("Continuando sin verificación de admin...");
+      if (!response.success) {
+        throw new Error(response.error || 'Error al cargar órdenes');
       }
 
-      if (!isAdmin) {
-        console.log("Usuario no es administrador, pero continuando...");
-        // No lanzar error, continuar para debug
-      }
-
-      // Debug: Verificar total de órdenes
-      const { count: totalOrders, error: countError } = await supabase
-        .from("orders")
-        .select("*", { count: "exact", head: true });
-
-      console.log("Total orders in DB:", totalOrders);
-
-      // Obtener todas las órdenes
-      const { data, error } = await supabase
-        .from("orders")
-        .select("*")
-        .order("created_at", { ascending: false });
-
-      if (error) {
-        console.error("Error fetching orders:", error);
-        throw error;
-      }
-
-      console.log("Orders fetched:", data?.length || 0);
-      console.log("Orders data:", data);
-      setOrders(data || []);
+      console.log("Orders fetched:", response.data?.length || 0);
+      setOrders(response.data || []);
     } catch (error) {
       console.error("Error fetching orders:", error);
       alert("Error: " + (error as Error).message);
@@ -139,32 +94,14 @@ export default function AdminOrders() {
     notes?: string
   ) => {
     try {
-      // Obtener el token de sesión
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      if (!session?.access_token) {
-        throw new Error("No hay sesión activa");
+      // Usar el endpoint que crea automáticamente el historial
+      const response = await apiClient.changeOrderStatusAdmin(orderId, newStatus, notes);
+
+      if (!response.success) {
+        throw new Error(response.error || "Error al actualizar el estado");
       }
 
-      const response = await fetch(`/api/admin/orders/${orderId}/status`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${session.access_token}`,
-        },
-        body: JSON.stringify({
-          new_status: newStatus,
-          notes: notes || null,
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Error al actualizar el estado");
-      }
-
-      const result = await response.json();
+      console.log('Order status updated with history:', response.data);
 
       // Actualizar solo la orden específica en la lista local
       setOrders((prev) =>
@@ -199,32 +136,12 @@ export default function AdminOrders() {
 
   const sendMessageToCustomer = async (orderId: string, message: string) => {
     try {
-      // Obtener el token de sesión
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      if (!session?.access_token) {
-        throw new Error("No hay sesión activa");
+      const response = await apiClient.sendAdminOrderMessage(orderId, message, false);
+
+      if (!response.success) {
+        throw new Error(response.error || "Error al enviar el mensaje");
       }
 
-      const response = await fetch(`/api/admin/orders/${orderId}/message`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${session.access_token}`,
-        },
-        body: JSON.stringify({
-          message: message,
-          is_internal: false,
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Error al enviar el mensaje");
-      }
-
-      const result = await response.json();
       // No necesitamos recargar toda la lista, el modal se actualizará solo
     } catch (error) {
       console.error("Error sending message:", error);
@@ -234,37 +151,12 @@ export default function AdminOrders() {
 
   const addShippingTracking = async (orderId: string, trackingData: any) => {
     try {
-      // Obtener el token de sesión
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      if (!session?.access_token) {
-        throw new Error("No hay sesión activa");
+      const response = await apiClient.addShippingTracking(orderId, trackingData);
+
+      if (!response.success) {
+        throw new Error(response.error || "Error al agregar información de envío");
       }
 
-      const response = await fetch(`/api/admin/orders/${orderId}/shipping`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${session.access_token}`,
-        },
-        body: JSON.stringify({
-          tracking_number: trackingData.tracking_number,
-          carrier: trackingData.carrier,
-          carrier_service: trackingData.carrier_service || null,
-          estimated_delivery: trackingData.estimated_delivery || null,
-          notes: trackingData.notes || null,
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(
-          errorData.error || "Error al agregar información de envío"
-        );
-      }
-
-      const result = await response.json();
       // No necesitamos recargar toda la lista, el modal se actualizará solo
     } catch (error) {
       console.error("Error adding shipping tracking:", error);
@@ -555,7 +447,7 @@ export default function AdminOrders() {
                           setSelectedOrder(order);
                           setShowOrderModal(true);
                         }}
-                        className="inline-flex items-center px-3 py-2 bg-[#4a5a3f] text-white rounded-lg hover:bg-[#3d4a34] transition-colors"
+                        className="inline-flex items-center px-3 py-2 bg-[#4a5a3f] text-white rounded-lg hover:bg-[#3d4a34] transition-colors cursor-pointer"
                         title="Ver detalles y gestionar"
                       >
                         <Eye className="w-4 h-4 mr-2" />

@@ -2,17 +2,20 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { CartItemType } from '@/components/types/CartItem';
 import { ProductType, getCurrentPrice } from '@/components/types/Product';
-import { supabase } from '@/lib/supabase';
+import { apiClient } from '@/lib/api-client';
 
 interface CartStore {
   // Estado
   cart: CartItemType[];
   isCartOpen: boolean;
   showCartAnimation: boolean;
+  backendTotal: number;
+  backendSavings: number;
 
   // Acciones del carrito
   addToCart: (product: ProductType, size: string) => Promise<void>;
   removeFromCart: (productId: string, size: string) => Promise<void>;
+  removeFromCartByProductId: (productId: string, size: string) => Promise<void>;
   updateQuantity: (productId: string, size: string, quantity: number) => Promise<void>;
   clearCart: () => Promise<void>;
   loadCartFromDB: () => Promise<void>;
@@ -36,24 +39,67 @@ export const useCartStore = create<CartStore>()(
       cart: [],
       isCartOpen: false,
       showCartAnimation: false,
+      backendTotal: 0,
+      backendSavings: 0,
 
       // Cargar carrito desde la base de datos
       loadCartFromDB: async () => {
         try {
-          const { data: { session } } = await supabase.auth.getSession();
-          if (!session) return;
+          if (!apiClient.isAuthenticated()) return;
 
-          const response = await fetch('/api/cart', {
-            headers: {
-              'Authorization': `Bearer ${session.access_token}`,
-            },
-          });
+          const response = await apiClient.getCart();
 
-          if (response.ok) {
-            const data = await response.json();
-            if (data.success) {
-              set({ cart: data.data || [] });
-            }
+          if (response.success) {
+            // Extraer total y savings del backend
+            const backendTotal = response.data?.total || 0;
+            const backendSavings = response.data?.savings || 0;
+            
+            // Transformar la estructura plana a la estructura esperada
+            const transformedCart = (response.data?.items || []).map((item: any) => ({
+              id: item.id,
+              product: {
+                id: item.product_id,
+                name: item.product_name,
+                price: item.price,
+                image: item.image_url,
+                // Agregar campos por defecto para compatibilidad
+                original_price: item.original_price || null,
+                discount_percentage: item.discount_percentage || null,
+                is_on_discount: item.is_on_discount || false,
+                discount_start_date: item.discount_start_date || null,
+                discount_end_date: item.discount_end_date || null,
+                current_price: item.current_price || item.price,
+                savings_amount: item.savings_amount || 0,
+                discount_active: item.discount_active || false,
+                image_back: item.image_back || null,
+                description: item.description || '',
+                category: item.category || '',
+                gender: item.gender || '',
+                sizes: item.sizes || [],
+                stock_quantity: item.stock_quantity || 0,
+                status: item.status || 'active',
+                specifications: item.specifications || [],
+                tags: item.tags || [],
+                created_at: item.created_at || null,
+                updated_at: item.updated_at || null,
+              },
+              // Campos de promoción del backend
+              price: item.price,
+              original_price: item.original_price,
+              discount_percentage: item.discount_percentage,
+              is_on_discount: item.is_on_discount,
+              final_price: item.final_price,
+              size: item.size,
+              quantity: item.quantity,
+              created_at: item.created_at,
+              updated_at: item.updated_at,
+            }));
+            
+            set({ 
+              cart: transformedCart,
+              backendTotal,
+              backendSavings
+            });
           }
         } catch (error) {
           console.error('Error loading cart:', error);
@@ -63,17 +109,11 @@ export const useCartStore = create<CartStore>()(
       // Agregar al carrito
       addToCart: async (product, size) => {
         // Verificar si el usuario está logueado PRIMERO
-        try {
-          const { data: { session } } = await supabase.auth.getSession();
-          if (!session) {
-            // Solo abrir modal de login, NO hacer nada más
-            const { useUIStore } = await import('./uiStore');
-            useUIStore.getState().openAuthModal();
-            return; // Salir inmediatamente, no ejecutar el resto
-          }
-        } catch (error) {
-          console.error('Error checking session:', error);
-          return; // Salir si hay error
+        if (!apiClient.isAuthenticated()) {
+          // Solo abrir modal de login, NO hacer nada más
+          const { useUIStore } = await import('./uiStore');
+          useUIStore.getState().openAuthModal();
+          return; // Salir inmediatamente, no ejecutar el resto
         }
 
         // Solo ejecutar si el usuario está logueado
@@ -106,24 +146,10 @@ export const useCartStore = create<CartStore>()(
 
         // Guardar en la base de datos
         try {
-          const { data: { session } } = await supabase.auth.getSession();
-          if (session) {
-            const response = await fetch('/api/cart', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${session.access_token}`,
-              },
-              body: JSON.stringify({
-                product_id: product.id,
-                size,
-                quantity: 1,
-              }),
-            });
+          const response = await apiClient.addToCart(product.id, 1, size);
 
-            if (response.ok) {
-              await get().loadCartFromDB();
-            }
+          if (response.success) {
+            await get().loadCartFromDB();
           }
         } catch (error) {
           console.error('Error saving to database:', error);
@@ -144,35 +170,70 @@ export const useCartStore = create<CartStore>()(
           item => item.product.id === productId && item.size === size
         );
 
-        // Actualizar localmente primero
-        set({
-          cart: cart.filter(
-            item => !(item.product.id === productId && item.size === size)
-          )
-        });
+        console.log('Removing cart item:', { productId, size, cartItem });
 
-        // Eliminar de la base de datos
+        // Eliminar de la base de datos PRIMERO
         try {
-          const { data: { session } } = await supabase.auth.getSession();
-          if (session && cartItem?.id) {
-            console.log('Removing cart item from database:', cartItem.id);
+          if (cartItem?.id) {
+            console.log('Removing cart item from database by ID:', cartItem.id);
             
-            const response = await fetch(`/api/cart/${cartItem.id}`, {
-              method: 'DELETE',
-              headers: {
-                'Authorization': `Bearer ${session.access_token}`,
-              },
-            });
+            const response = await apiClient.removeFromCart(cartItem.id);
 
-            const result = await response.json();
-            console.log('Remove response:', result);
-
-            if (response.ok) {
-              await get().loadCartFromDB();
+            if (response.success) {
+              // Solo actualizar localmente si la eliminación en BD fue exitosa
+              set({
+                cart: cart.filter(
+                  item => !(item.product.id === productId && item.size === size)
+                )
+              });
+            } else {
+              console.error('Failed to remove from database by ID:', response.error);
+              // Intentar con product_id y size como fallback
+              await get().removeFromCartByProductId(productId, size);
             }
+          } else {
+            console.log('Cart item has no ID, removing by product_id and size:', { productId, size });
+            // Si no hay ID, usar product_id y size
+            await get().removeFromCartByProductId(productId, size);
           }
         } catch (error) {
           console.error('Error removing from database:', error);
+          // En caso de error, intentar con product_id y size
+          await get().removeFromCartByProductId(productId, size);
+        }
+      },
+
+      // Remover del carrito por product_id y size
+      removeFromCartByProductId: async (productId: string, size: string) => {
+        try {
+          console.log('Removing cart item by product_id and size:', { productId, size });
+          
+          const response = await apiClient.removeFromCartByProduct(productId, size);
+
+          if (response.success) {
+            // Actualizar localmente si la eliminación en BD fue exitosa
+            set({
+              cart: get().cart.filter(
+                item => !(item.product.id === productId && item.size === size)
+              )
+            });
+          } else {
+            console.error('Failed to remove from database by product_id and size:', response.error);
+            // En caso de error, actualizar localmente de todas formas
+            set({
+              cart: get().cart.filter(
+                item => !(item.product.id === productId && item.size === size)
+              )
+            });
+          }
+        } catch (error) {
+          console.error('Error removing from database by product_id and size:', error);
+          // En caso de error, actualizar localmente de todas formas
+          set({
+            cart: get().cart.filter(
+              item => !(item.product.id === productId && item.size === size)
+            )
+          });
         }
       },
 
@@ -194,27 +255,17 @@ export const useCartStore = create<CartStore>()(
 
         // Actualizar en la base de datos
         try {
-          const { data: { session } } = await supabase.auth.getSession();
-          if (session) {
-            // Buscar el item en el carrito para obtener su ID
-            const cartItem = get().cart.find(
-              item => item.product.id === productId && item.size === size
-            );
-            
-            if (cartItem?.id) {
-              const response = await fetch(`/api/cart/${cartItem.id}`, {
-                method: 'PUT',
-                headers: {
-                  'Content-Type': 'application/json',
-                  'Authorization': `Bearer ${session.access_token}`,
-                },
-                body: JSON.stringify({ quantity }),
-              });
+          // Buscar el item en el carrito para obtener su ID
+          const cartItem = get().cart.find(
+            item => item.product.id === productId && item.size === size
+          );
+          
+          if (cartItem?.id) {
+            const response = await apiClient.updateCartItem(cartItem.id, quantity);
 
-              // Si el PUT fue exitoso, recargar el carrito desde la BD para sincronizar
-              if (response.ok) {
-                await get().loadCartFromDB();
-              }
+            // Si el PUT fue exitoso, recargar el carrito desde la BD para sincronizar
+            if (response.success) {
+              await get().loadCartFromDB();
             }
           }
         } catch (error) {
@@ -229,19 +280,11 @@ export const useCartStore = create<CartStore>()(
 
         // Limpiar en la base de datos
         try {
-          const { data: { session } } = await supabase.auth.getSession();
-          if (session) {
-            const response = await fetch('/api/cart', {
-              method: 'DELETE',
-              headers: {
-                'Authorization': `Bearer ${session.access_token}`,
-              },
-            });
+          const response = await apiClient.clearCart();
 
-            // Si el DELETE fue exitoso, recargar el carrito desde la BD para sincronizar
-            if (response.ok) {
-              await get().loadCartFromDB();
-            }
+          // Si el DELETE fue exitoso, recargar el carrito desde la BD para sincronizar
+          if (response.success) {
+            await get().loadCartFromDB();
           }
         } catch (error) {
           console.error('Error clearing cart in database:', error);

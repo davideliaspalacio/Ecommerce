@@ -17,6 +17,7 @@ interface AuthContextType {
   isModerator: () => boolean
   isActive: () => boolean
   isEmailVerified: () => boolean
+  isAuthenticated: () => boolean
   clearError: () => void
 }
 

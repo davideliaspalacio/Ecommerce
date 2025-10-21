@@ -5,6 +5,7 @@ import { useAuthContext } from "@/contexts/AuthContext";
 import { useCartStore } from "@/store/cartStore";
 import { getCurrentPrice } from "@/components/types/Product";
 import { ShippingInfoType } from "@/components/types/Order";
+import { apiClient } from "@/lib/api-client";
 import ShippingForm from "./shippingForm";
 import CreditCardForm from "./CreditCardForm";
 import { Lock } from "lucide-react";
@@ -53,32 +54,41 @@ export default function EpaycoCheckout({
       const tax = Math.round(subtotal * 0.19); // IVA del 19%
       const total = subtotal + tax + SHIPPING_COST;
 
+      // Preparar items para el nuevo formato
+      const orderItems = cart.map(item => ({
+        product_id: item.product.id,
+        quantity: item.quantity,
+        price: item.final_price || item.price || 0
+      }));
+
+      // Preparar shipping_info para el nuevo formato
+      const shippingInfo = {
+        shipping_full_name: shipping.full_name,
+        shipping_address: shipping.address,
+        shipping_city: shipping.city,
+        shipping_department: shipping.department,
+        shipping_postal_code: shipping.postal_code,
+        shipping_phone: shipping.phone,
+        shipping_email: user.email,
+        shipping_document_type: shipping.document_type,
+        shipping_document_number: shipping.document_number,
+        shipping_neighborhood: shipping.neighborhood,
+        shipping_additional_info: shipping.additional_info
+      };
+
       // Crear la orden en la base de datos
-      const orderResponse = await fetch("/api/epayco/create-order", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          user_id: user.id,
-          user_email: user.email,
-          user_name: user.user_metadata?.full_name || user.email?.split("@")[0],
-          user_phone: user.user_metadata?.phone || "",
-          shipping_info: shipping,
-          items: cart,
-          subtotal,
-          tax,
-          shipping_cost: SHIPPING_COST,
-          total,
-          payment_method: "epayco",
-        }),
+      const orderResponse = await apiClient.createOrder({
+        items: orderItems,
+        shipping_info: shippingInfo,
+        notes: "",
+        status: "pending"
       });
 
-      if (!orderResponse.ok) {
-        throw new Error("Error al crear la orden");
+      if (!orderResponse.success) {
+        throw new Error(orderResponse.error || "Error al crear la orden");
       }
 
-      const { order } = await orderResponse.json();
+      const order = orderResponse.data;
       setCreatedOrderId(order.id);
       
       // Avanzar al paso de pago

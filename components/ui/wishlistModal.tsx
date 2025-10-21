@@ -20,6 +20,9 @@ export default function WishlistModal() {
     getShareId,
   } = useWishlistStore();
   
+  // Debug: ver qué tipo de dato es wishlist
+  console.log('Wishlist en WishlistModal:', wishlist, 'Tipo:', typeof wishlist, 'Es array:', Array.isArray(wishlist));
+  
   const { setSelectedProduct, setSelectedSize, setCurrentImageIndex, openAuthModal } = useUIStore();
   const { addToCart } = useCartStore();
   const { user } = useAuthContext();
@@ -74,7 +77,7 @@ export default function WishlistModal() {
       return;
     }
 
-    if (wishlist.length === 0) {
+    if (!Array.isArray(wishlist) || wishlist.length === 0) {
       alert('Tu wishlist está vacío. Agrega productos antes de compartir.');
       return;
     }
@@ -246,7 +249,7 @@ export default function WishlistModal() {
               <p className="text-red-500 text-lg mb-2">Error al cargar favoritos</p>
               <p className="text-gray-400 text-sm">{error}</p>
             </div>
-          ) : wishlist.length === 0 ? (
+          ) : (Array.isArray(wishlist) ? wishlist.length : 0) === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-center">
               <svg
                 className="w-16 h-16 text-gray-300 mb-4"
@@ -270,7 +273,7 @@ export default function WishlistModal() {
             </div>
           ) : (
             <div className="space-y-4">
-              {wishlist.map((item, index) => (
+              {(Array.isArray(wishlist) ? wishlist : []).map((item, index) => (
                 <div
                   key={`${item.id}-${index}`}
                   className="flex gap-4 pb-4 border-b animate-fade-in-up"
@@ -344,7 +347,7 @@ export default function WishlistModal() {
         </div>
 
         {/* Footer del wishlist */}
-        {wishlist.length > 0 && (
+        {Array.isArray(wishlist) && wishlist.length > 0 && (
           <div className="border-t p-6">
             <div className="text-center text-sm text-gray-600 mb-4">
               {wishlist.length} producto{wishlist.length !== 1 ? 's' : ''} en favoritos

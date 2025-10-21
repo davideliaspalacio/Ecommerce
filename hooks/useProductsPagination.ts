@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { supabase } from '@/lib/supabase';
+import { apiClient } from '@/lib/api-client';
 import { ProductType } from '@/components/types/Product';
 
 interface UseProductsPaginationReturn {
@@ -26,32 +26,27 @@ export function useProductsPagination(limit: number = 8): UseProductsPaginationR
       setError(null);
 
       const currentOffset = reset ? 0 : offset;
+      const currentPage = Math.floor(currentOffset / limit) + 1;
       
       if (loading) {
         return;
       }
       
-      // Obtener el total de productos activos
-      const { count } = await supabase
-        .from('products')
-        .select('*', { count: 'exact', head: true })
-        .eq('status', 'active');
+      // Obtener productos con paginación usando el nuevo API
+      const response = await apiClient.getProducts({
+        page: currentPage,
+        limit: limit
+      });
 
-      setTotalCount(count || 0);
-
-      // Obtener productos con paginación
-      const { data, error: fetchError } = await supabase
-        .from('products')
-        .select('*')
-        .eq('status', 'active')
-        .order('created_at', { ascending: false })
-        .range(currentOffset, currentOffset + limit - 1);
-
-      if (fetchError) {
-        throw fetchError;
+      if (!response.success) {
+        throw new Error(response.error || 'Error al cargar los productos');
       }
 
-      const newProducts = data || [];
+      // El backend devuelve los productos directamente en data
+      const newProducts = response.data || [];
+      const totalCount = response.total || 0;
+      
+      setTotalCount(totalCount);
       
       if (reset) {
         setProducts(newProducts);
@@ -67,7 +62,7 @@ export function useProductsPagination(limit: number = 8): UseProductsPaginationR
       }
 
       // Verificar si hay más productos
-      setHasMore((currentOffset + limit) < (count || 0));
+      setHasMore((currentOffset + limit) < totalCount);
 
     } catch (err: any) {
       console.error('Error fetching products:', err);

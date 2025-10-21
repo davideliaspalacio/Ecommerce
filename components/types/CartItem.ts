@@ -7,6 +7,12 @@ export interface CartItemType {
     quantity: number
     created_at?: string
     updated_at?: string
+    // Campos de promoción del backend
+    price?: number
+    original_price?: number | null
+    discount_percentage?: number | null
+    is_on_discount?: boolean
+    final_price?: number
 }
 
 export interface CartItemDB {
