@@ -1,7 +1,4 @@
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 
-  (process.env.NODE_ENV === 'development' 
-    ? 'http://localhost:3001' 
-    : 'https://enoughh-backend-production.up.railway.app')
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'
 
 interface ApiResponse<T = any> {
   success: boolean
