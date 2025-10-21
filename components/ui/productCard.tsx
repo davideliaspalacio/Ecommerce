@@ -175,7 +175,7 @@ export default function ProductsCards() {
                             <span className="text-sm">$</span>
                             <span className="text-sm">&nbsp;</span>
                             <span className="text-lg">
-                              {product.price.toLocaleString()}
+                              {getCurrentPrice(product).toLocaleString()}
                             </span>
                           </span>
                         )}

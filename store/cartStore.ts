@@ -129,14 +129,30 @@ export const useCartStore = create<CartStore>()(
         );
 
         if (existingItemIndex !== -1) {
-          // Si ya existe, incrementar cantidad
+          // Si ya existe, incrementar cantidad y asegurar campos de precio
+          const currentPrice = getCurrentPrice(product);
           newCart[existingItemIndex] = {
             ...newCart[existingItemIndex],
-            quantity: newCart[existingItemIndex].quantity + 1
+            quantity: newCart[existingItemIndex].quantity + 1,
+            price: currentPrice,
+            final_price: currentPrice,
+            original_price: product.original_price || currentPrice,
+            discount_percentage: product.discount_percentage || 0,
+            is_on_discount: product.is_on_discount || false
           };
         } else {
-          // Si no existe, agregar nuevo item
-          newCart.push({ product, size, quantity: 1 });
+          // Si no existe, agregar nuevo item con campos de precio calculados
+          const currentPrice = getCurrentPrice(product);
+          newCart.push({ 
+            product, 
+            size, 
+            quantity: 1,
+            price: currentPrice,
+            final_price: currentPrice,
+            original_price: product.original_price || currentPrice,
+            discount_percentage: product.discount_percentage || 0,
+            is_on_discount: product.is_on_discount || false
+          });
         }
 
         set({

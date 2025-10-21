@@ -151,26 +151,26 @@ export default function ShoppingCart() {
                         Talla: {item.size}
                       </p>
                       <div className="flex flex-col">
-                        {item.is_on_discount ? (
+                        {isDiscountActive(item.product) ? (
                           <>
                             <div className="flex items-center gap-2">
                               <span className="text-lg font-bold text-green-600">
-                                ${item.final_price?.toLocaleString("es-CO")}
+                                ${getCurrentPrice(item.product).toLocaleString("es-CO")}
                               </span>
                               <span className="px-2 py-1 bg-red-100 text-red-600 text-xs font-bold rounded-full animate-pulse">
-                                -{item.discount_percentage}% OFF
+                                -{getDiscountPercentage(item.product)}% OFF
                               </span>
                             </div>
                             <div className="text-sm text-gray-500 line-through">
-                              ${item.original_price?.toLocaleString("es-CO")}
+                              ${(item.product.original_price || getCurrentPrice(item.product)).toLocaleString("es-CO")}
                             </div>
                             <div className="text-xs text-green-600 font-medium bg-green-50 px-2 py-1 rounded">
-                              💰 Ahorras: ${((item.original_price || 0) - (item.final_price || 0)).toLocaleString("es-CO")}
+                              💰 Ahorras: ${getSavingsAmount(item.product).toLocaleString("es-CO")}
                             </div>
                           </>
                         ) : (
                           <span className="text-lg font-medium">
-                            ${item.price?.toLocaleString("es-CO")}
+                            ${getCurrentPrice(item.product).toLocaleString("es-CO")}
                           </span>
                         )}
                       </div>

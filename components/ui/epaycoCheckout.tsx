@@ -58,7 +58,7 @@ export default function EpaycoCheckout({
       const orderItems = cart.map(item => ({
         product_id: item.product.id,
         quantity: item.quantity,
-        price: item.final_price || item.price || 0
+        price: getCurrentPrice(item.product)
       }));
 
       // Preparar shipping_info para el nuevo formato
