@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { useAuthContext } from "@/contexts/AuthContext";
-import { createClient } from "@supabase/supabase-js";
+import { apiClient } from "@/lib/api-client";
 import { OrderType } from "@/components/types/Order";
 import Link from "next/link";
 import Image from "next/image";
@@ -12,11 +12,6 @@ import FooterSection from "@/components/ui/footerSection";
 import ShoppingCart from "@/components/ui/shoppingCart";
 import OrderTracking from "@/components/ui/OrderTracking";
 import { BadgeCheck, X, Ban, Clock } from 'lucide-react';
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
 
 export default function OrderDetailPage() {
   const { user, loading: authLoading } = useAuthContext();
@@ -45,16 +40,13 @@ export default function OrderDetailPage() {
   const fetchOrder = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
-        .from("orders")
-        .select("*")
-        .eq("id", orderId)
-        .eq("user_id", user!.id)
-        .single();
+      const response = await apiClient.getOrder(orderId);
 
-      if (error) throw error;
+      if (!response.success) {
+        throw new Error(response.error || 'Orden no encontrada');
+      }
 
-      setOrder(data);
+      setOrder(response.data);
     } catch (err: any) {
       console.error("Error fetching order:", err);
       setError("Orden no encontrada");
@@ -68,15 +60,10 @@ export default function OrderDetailPage() {
 
     try {
       setChecking(true);
-      const refToUse = customRefPayco || order.epayco_ref_payco;
-      
-      const response = await fetch(
-        `/api/epayco/check-payment?${refToUse ? `ref_payco=${refToUse}` : `order_id=${order.id}`}`
-      );
+      const response = await apiClient.verifyPayment(order.id);
 
-      if (response.ok) {
-        const data = await response.json();
-        console.log('Pago verificado:', data);
+      if (response.success) {
+        console.log('Pago verificado:', response.data);
         
         // Recargar la orden para ver los cambios
         await fetchOrder();
@@ -85,9 +72,8 @@ export default function OrderDetailPage() {
         setShowManualInput(false);
         setManualRefPayco("");
       } else {
-        const errorData = await response.json();
-        console.error('Error en la verificación:', errorData);
-        alert('⚠️ No se pudo verificar el pago. Intenta con el ref_payco de ePayco.');
+        console.error('Error en la verificación:', response.error);
+        alert('⚠️ No se pudo verificar el pago. Intenta más tarde.');
         setShowManualInput(true);
       }
     } catch (err) {

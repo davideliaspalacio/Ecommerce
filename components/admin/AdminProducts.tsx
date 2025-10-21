@@ -4,23 +4,33 @@ import { useState } from "react";
 import React from "react";
 import { useProductsContext } from "@/contexts/ProductsContext";
 import { useAuthContext } from "@/contexts/AuthContext";
-import { CreateProductType } from "@/components/types/Product";
+import { CreateProductType, ProductType } from "@/components/types/Product";
+import { apiClient } from "@/lib/api-client";
 import AdminRouteGuard from "./AdminRouteGuard";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
 
 export default function AdminProducts() {
-  const { products, loading, createProduct, updateProduct, deleteProduct } =
-    useProductsContext();
+  const { createProduct, updateProduct, deleteProduct } = useProductsContext();
   const { profile } = useAuthContext();
+  const [products, setProducts] = useState<ProductType[]>([]);
+  const [loading, setLoading] = useState(true);
   const [isCreating, setIsCreating] = useState(false);
   const [editingProduct, setEditingProduct] = useState<string | null>(null);
   const [newTag, setNewTag] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [discountFilter, setDiscountFilter] = useState<string>("all");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalProducts, setTotalProducts] = useState(0);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [imageType, setImageType] = useState<'url' | 'upload'>('url');
   const [imageBackType, setImageBackType] = useState<'url' | 'upload'>('url');
   const [uploadingImage, setUploadingImage] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [selectedImages, setSelectedImages] = useState<File[]>([]);
+  const [uploadedImageUrls, setUploadedImageUrls] = useState<string[]>([]);
+  const [imageUploadType, setImageUploadType] = useState<'url' | 'upload'>('url');
+  const [uploadingImages, setUploadingImages] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [productToDelete, setProductToDelete] = useState<string | null>(null);
   const [isClosing, setIsClosing] = useState(false);
@@ -29,10 +39,11 @@ export default function AdminProducts() {
   const [formData, setFormData] = useState<CreateProductType>({
     name: "",
     price: 0,
-    image: "",
-    image_back: "",
-    category: "CAMISETA",
-    gender: "UNISEX",
+    images: [],
+    main_image: "",
+    image: "", 
+    category: "camiseta",
+    gender: "unisex",
     description: "",
     specifications: [],
     sizes: [],
@@ -90,6 +101,61 @@ export default function AdminProducts() {
       tags: newTags
     });
   };
+
+  // Función para cargar productos con paginación
+  const loadProducts = async (page: number = 1, reset: boolean = false) => {
+    try {
+      if (reset) {
+        setCurrentPage(1);
+        setLoading(true);
+      } else {
+        setIsLoadingMore(true);
+      }
+      
+      const response = await apiClient.getProducts({
+        page: page,
+        limit: 20 // Mostrar 20 productos por página en admin
+      });
+
+      if (!response.success) {
+        throw new Error(response.error || 'Error al cargar los productos');
+      }
+
+      const newProducts = response.data || [];
+      const total = response.total || 0;
+      const totalPages = response.totalPages || 1;
+
+      setTotalProducts(total);
+      setTotalPages(totalPages);
+      
+      if (reset) {
+        setProducts(newProducts);
+      } else {
+        setProducts(prev => [...prev, ...newProducts]);
+      }
+      
+    } catch (error) {
+      console.error('Error loading products:', error);
+      alert('Error al cargar los productos: ' + (error as Error).message);
+    } finally {
+      setLoading(false);
+      setIsLoadingMore(false);
+    }
+  };
+
+  // Cargar más productos
+  const loadMoreProducts = async () => {
+    if (currentPage < totalPages && !isLoadingMore) {
+      const nextPage = currentPage + 1;
+      setCurrentPage(nextPage);
+      await loadProducts(nextPage, false);
+    }
+  };
+
+  // Cargar productos iniciales
+  React.useEffect(() => {
+    loadProducts(1, true);
+  }, []);
 
   // Filtrar productos por estado y descuento
   const filteredProducts = products.filter(product => {
@@ -177,6 +243,144 @@ export default function AdminProducts() {
     return true;
   };
 
+  const uploadMultipleImages = async (files: File[]): Promise<string[]> => {
+    try {
+      setUploadingImages(true);
+      setUploadProgress(0);
+      
+      const imageUrls: string[] = [];
+      
+      for (let i = 0; i < files.length; i++) {
+        try {
+          const imageUrl = await uploadImage(files[i]);
+          imageUrls.push(imageUrl);
+          
+          const progress = ((i + 1) / files.length) * 100;
+          setUploadProgress(progress);
+        } catch (error) {
+          console.error(`Error uploading image ${i + 1}:`, error);
+          throw new Error(`Error al subir la imagen ${i + 1}: ${error instanceof Error ? error.message : 'Error desconocido'}`);
+        }
+      }
+      
+      return imageUrls;
+    } catch (error) {
+      console.error('Error uploading images:', error);
+      throw error;
+    } finally {
+      setUploadingImages(false);
+      setUploadProgress(0);
+    }
+  };
+
+  const validateMultipleImages = (files: File[]): boolean => {
+    const maxFiles = 4;
+    const maxSize = 5 * 1024 * 1024; // 5MB
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+    
+    if (files.length > maxFiles) {
+      alert(`Máximo ${maxFiles} imágenes permitidas`);
+      return false;
+    }
+    
+    for (let file of files) {
+      if (!allowedTypes.includes(file.type)) {
+        alert('Solo se permiten archivos JPG, PNG, WebP y GIF');
+        return false;
+      }
+      if (file.size > maxSize) {
+        alert('Cada archivo debe ser menor a 5MB');
+        return false;
+      }
+    }
+    
+    return true;
+  };
+
+  const handleMultipleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    
+    console.log('Archivos seleccionados:', files);
+    console.log('Estado actual de formData.images:', formData.images);
+    console.log('Imagen principal actual:', formData.main_image);
+    
+    if (files.length === 0) return;
+    
+    if (!validateMultipleImages(files)) {
+      e.target.value = '';
+      return;
+    }
+    
+    try {
+      console.log('Iniciando subida de múltiples imágenes...');
+      const imageUrls = await uploadMultipleImages(files);
+      console.log('URLs de imágenes subidas:', imageUrls);
+      
+      setUploadedImageUrls(imageUrls);
+      
+      const existingImages = formData.images.filter(img => img && img.trim() !== '');
+      const allImages = [...existingImages, ...imageUrls];
+      
+      let mainImage = formData.main_image || '';
+      
+      if (!mainImage && imageUrls.length > 0) {
+        mainImage = imageUrls[0];
+      }
+      
+      const updatedFormData = {
+        ...formData,
+        images: allImages,
+        main_image: mainImage,
+        image: mainImage, 
+      };
+      
+      setFormData(updatedFormData);
+      
+      console.log('FormData actualizado:', {
+        images: updatedFormData.images,
+        main_image: updatedFormData.main_image,
+      });
+      
+      e.target.value = '';
+    } catch (error) {
+      console.error('Error uploading images:', error);
+      alert(`Error al subir las imágenes: ${error instanceof Error ? error.message : 'Error desconocido'}`);
+      e.target.value = '';
+    }
+  };
+
+  const removeImage = (index: number) => {
+    const validImages = formData.images.filter(img => img && img.trim() !== '');
+    const imageToRemove = validImages[index];
+    const newImages = validImages.filter((_, i) => i !== index);
+    
+    let newMainImage = formData.main_image;
+    
+    if (imageToRemove === formData.main_image) {
+      newMainImage = newImages[0] || '';
+    }
+    
+    setFormData({
+      ...formData,
+      images: newImages, // Use the filtered array directly
+      main_image: newMainImage,
+      image: newMainImage, 
+    });
+  };
+
+  const setMainImage = (index: number) => {
+    const validImages = formData.images.filter(img => img && img.trim() !== '');
+    const [mainImg] = validImages.splice(index, 1);
+    const newImages = [mainImg, ...validImages];
+    
+    setFormData({
+      ...formData,
+      images: newImages, // Use the reordered array directly
+      main_image: mainImg,
+      image: mainImg,
+    });
+  };
+
   // Manejar cambio de archivo de imagen principal
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -214,7 +418,21 @@ export default function AdminProducts() {
         
         // Pequeño delay para mostrar el 100%
         setTimeout(() => {
-          setFormData({ ...formData, image: imageUrl });
+          const existingImages = formData.images.filter(img => img && img.trim() !== '');
+          const updatedImages = [...existingImages];
+          
+          if (updatedImages.length === 0) {
+            updatedImages[0] = imageUrl;
+          } else {
+            updatedImages[0] = imageUrl;
+          }
+          
+          setFormData({ 
+            ...formData, 
+            main_image: imageUrl,
+            image: imageUrl, 
+            images: updatedImages
+          });
           setUploadingImage(false);
           setUploadProgress(0);
         }, 500);
@@ -265,7 +483,22 @@ export default function AdminProducts() {
         
         // Pequeño delay para mostrar el 100%
         setTimeout(() => {
-          setFormData({ ...formData, image_back: imageUrl });
+          const existingImages = formData.images.filter(img => img && img.trim() !== '');
+          const updatedImages = [...existingImages];
+          
+          if (updatedImages.length === 0) {
+            updatedImages[0] = formData.main_image || ''; 
+            updatedImages[1] = imageUrl;
+          } else if (updatedImages.length === 1) {
+            updatedImages[1] = imageUrl;
+          } else {
+            updatedImages[1] = imageUrl;
+          }
+          
+          setFormData({ 
+            ...formData, 
+            images: updatedImages
+          });
           setUploadingImage(false);
           setUploadProgress(0);
         }, 500);
@@ -326,34 +559,50 @@ export default function AdminProducts() {
     }
 
     try {
+      // Filter out null/empty values from images array before sending to API
+      const cleanFormData = {
+        ...formData,
+        images: formData.images.filter(img => img && img.trim() !== '')
+      };
+
       if (editingProduct) {
-        const result = await updateProduct(editingProduct, formData);
+        const result = await updateProduct(editingProduct, cleanFormData);
         if (result.error) {
           console.error('Error updating product:', result.error);
           alert(`Error al actualizar el producto: ${result.error.message}`);
           return;
         }
+        // Actualizar la lista local
+        setProducts(prev => 
+          prev.map(product => product.id === editingProduct ? result.data : product)
+        );
         setEditingProduct(null);
       } else {
-        const result = await createProduct(formData);
+        const result = await createProduct(cleanFormData);
         if (result.error) {
           console.error('Error creating product:', result.error);
           alert(`Error al crear el producto: ${result.error.message}`);
           return;
         }
+        // Agregar el nuevo producto a la lista local
+        setProducts(prev => [result.data, ...prev]);
       }
 
       // Reset form
       setNewTag("");
       setImageType('url');
       setImageBackType('url');
+      setImageUploadType('url');
+      setUploadedImageUrls([]);
+      setSelectedImages([]);
       setFormData({
         name: "",
         price: 0,
-        image: "",
-        image_back: "",
-        category: "CAMISETA",
-        gender: "UNISEX",
+        images: [],
+        main_image: "",
+        image: "", // Include for API compatibility
+        category: "camiseta",
+        gender: "unisex",
         description: "",
         specifications: [],
         sizes: [],
@@ -383,11 +632,15 @@ export default function AdminProducts() {
     setNewTag("");
     setImageType('url');
     setImageBackType('url');
+    setImageUploadType('url');
+    setUploadedImageUrls([]);
+    setSelectedImages([]);
     setFormData({
       name: product.name,
       price: product.price,
-      image: product.image,
-      image_back: product.image_back || "",
+      images: product.images || [],
+      main_image: product.main_image || "",
+      image: product.main_image || product.image || "", 
       category: product.category,
       gender: product.gender,
       description: product.description || "",
@@ -419,7 +672,13 @@ export default function AdminProducts() {
     if (productToDelete) {
       setIsDeleting(true);
       setIsClosing(true);
-      await deleteProduct(productToDelete);
+      const result = await deleteProduct(productToDelete);
+      
+      if (!result.error) {
+        // Remover el producto de la lista local
+        setProducts(prev => prev.filter(product => product.id !== productToDelete));
+      }
+      
       setTimeout(() => {
         setShowDeleteModal(false);
         setProductToDelete(null);
@@ -463,6 +722,13 @@ export default function AdminProducts() {
       if (result.error) {
         console.error('Error updating product status:', result.error);
         alert(`Error al actualizar el estado: ${result.error.message}`);
+      } else {
+        // Actualizar el estado en la lista local
+        setProducts(prev => 
+          prev.map(product => 
+            product.id === productId ? { ...product, status: newStatus as any } : product
+          )
+        );
       }
     } catch (error) {
       console.error('Unexpected error:', error);
@@ -494,13 +760,17 @@ export default function AdminProducts() {
             setNewTag("");
             setImageType('url');
             setImageBackType('url');
+            setImageUploadType('url');
+            setUploadedImageUrls([]);
+            setSelectedImages([]);
             setFormData({
               name: "",
               price: 0,
-              image: "",
-              image_back: "",
-              category: "CAMISETA",
-              gender: "UNISEX",
+              images: [],
+              main_image: "",
+              image: "", // Include for API compatibility
+              category: "camiseta",
+              gender: "unisex",
               description: "",
               specifications: [],
               sizes: [],
@@ -1283,9 +1553,9 @@ export default function AdminProducts() {
                     <div>
                       <input
                         type="url"
-                        value={formData.image}
+                        value={formData.main_image}
                         onChange={(e) =>
-                          setFormData({ ...formData, image: e.target.value })
+                          setFormData({ ...formData, main_image: e.target.value, image: e.target.value })
                         }
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#4a5a3f] cursor-text"
                         placeholder="https://ejemplo.com/imagen.jpg"
@@ -1355,18 +1625,18 @@ export default function AdminProducts() {
                     </div>
                   )}
                   
-                  {formData.image && (
+                  {formData.main_image && (
                     <div className="mt-3">
                       <p className="text-sm font-medium text-gray-700 mb-2">Vista previa:</p>
                       <div className="relative inline-block">
                         <img
-                          src={formData.image}
+                          src={formData.main_image}
                           alt="Vista previa"
                           className="w-24 h-24 object-cover rounded-lg border-2 border-gray-200 shadow-sm"
                         />
                         <button
                           type="button"
-                          onClick={() => setFormData({ ...formData, image: "" })}
+                          onClick={() => setFormData({ ...formData, main_image: "", image: "" })}
                           className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600 transition-colors cursor-pointer"
                           title="Eliminar imagen"
                         >
@@ -1378,73 +1648,61 @@ export default function AdminProducts() {
                 </div>
               </div>
               
-              <div>
+              
+              {/* New Multiple Images Section */}
+              <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Imagen Trasera (Opcional)
+                  Múltiples Imágenes (Máximo 4) *
                 </label>
                 <div className="space-y-3">
                   <div className="flex gap-2">
                     <button
                       type="button"
-                      onClick={() => setImageBackType('url')}
+                      onClick={() => setImageUploadType('url')}
                       className={`px-4 py-2 text-sm font-medium rounded-md transition-colors cursor-pointer ${
-                        imageBackType === 'url'
+                        imageUploadType === 'url'
                           ? 'bg-[#4a5a3f] text-white shadow-md'
                           : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                       }`}
                     >
-                      📎 Usar URL
+                      📎 Usar URLs
                     </button>
                     <button
                       type="button"
-                      onClick={() => setImageBackType('upload')}
+                      onClick={() => setImageUploadType('upload')}
                       className={`px-4 py-2 text-sm font-medium rounded-md transition-colors cursor-pointer ${
-                        imageBackType === 'upload'
+                        imageUploadType === 'upload'
                           ? 'bg-[#4a5a3f] text-white shadow-md'
                           : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                       }`}
                     >
-                      📁 Subir Archivo
+                      📁 Subir Archivos
                     </button>
                   </div>
                   
-                  {imageBackType === 'url' ? (
-                    <div>
-                      <input
-                        type="url"
-                        value={formData.image_back}
-                        onChange={(e) =>
-                          setFormData({ ...formData, image_back: e.target.value })
-                        }
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#4a5a3f] cursor-text"
-                        placeholder="https://ejemplo.com/imagen-trasera.jpg"
-                      />
-                      <p className="text-xs text-gray-500 mt-1">
-                        Ingresa la URL completa de la imagen trasera
-                      </p>
-                    </div>
-                  ) : (
+                  {imageUploadType === 'upload' ? (
                     <div className="relative">
                       <input
                         type="file"
                         accept="image/jpeg,image/png,image/webp,image/gif"
-                        onChange={handleImageBackUpload}
+                        onChange={handleMultipleImageUpload}
+                        multiple
                         className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                        disabled={uploadingImage}
-                        id="image-back-upload"
+                        disabled={uploadingImages}
+                        id="multiple-image-upload"
                       />
                       <label
-                        htmlFor="image-back-upload"
+                        htmlFor="multiple-image-upload"
                         className={`flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-md cursor-pointer transition-colors ${
-                          uploadingImage
+                          uploadingImages
                             ? 'border-blue-300 bg-blue-50'
                             : 'border-gray-300 hover:border-[#4a5a3f] hover:bg-gray-50'
                         }`}
                       >
-                        {uploadingImage ? (
+                        {uploadingImages ? (
                           <div className="flex flex-col items-center">
                             <div className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin mb-2"></div>
-                            <p className="text-sm text-blue-600 font-medium mb-2">Subiendo imagen...</p>
+                            <p className="text-sm text-blue-600 font-medium mb-2">Subiendo imágenes...</p>
                             
                             {/* Barra de progreso */}
                             <div className="w-full bg-gray-200 rounded-full h-2 mb-2">
@@ -1458,10 +1716,10 @@ export default function AdminProducts() {
                             <button
                               type="button"
                               onClick={() => {
-                                setUploadingImage(false);
+                                setUploadingImages(false);
                                 setUploadProgress(0);
                                 // Limpiar el input de archivo
-                                const fileInput = document.getElementById('image-upload') as HTMLInputElement;
+                                const fileInput = document.getElementById('multiple-image-upload') as HTMLInputElement;
                                 if (fileInput) fileInput.value = '';
                               }}
                               className="px-3 py-1 text-xs bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors cursor-pointer"
@@ -1474,36 +1732,174 @@ export default function AdminProducts() {
                             <svg className="w-8 h-8 text-gray-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                             </svg>
-                            <p className="text-sm text-gray-600 font-medium">Haz clic para subir imagen trasera</p>
-                            <p className="text-xs text-gray-500 mt-1">JPG, PNG, WebP, GIF • Máximo 5MB</p>
+                            <p className="text-sm text-gray-600 font-medium">Haz clic para subir imágenes</p>
+                            <p className="text-xs text-gray-500 mt-1">JPG, PNG, WebP, GIF • Máximo 4 archivos • 5MB cada uno</p>
                           </div>
                         )}
                       </label>
                     </div>
-                  )}
-                  
-                  {formData.image_back && (
-                    <div className="mt-3">
-                      <p className="text-sm font-medium text-gray-700 mb-2">Vista previa trasera:</p>
-                      <div className="relative inline-block">
-                        <img
-                          src={formData.image_back}
-                          alt="Vista previa trasera"
-                          className="w-24 h-24 object-cover rounded-lg border-2 border-gray-200 shadow-sm"
+                  ) : (
+                    <div className="space-y-2">
+                      <div className="flex gap-2">
+                        <input
+                          type="url"
+                          placeholder="URL de imagen 1 (principal)"
+                          value={formData.main_image}
+                          onChange={(e) =>
+                            setFormData({ 
+                              ...formData, 
+                              main_image: e.target.value,
+                              image: e.target.value, // Include for API compatibility
+                              images: e.target.value ? [e.target.value, ...formData.images.slice(1)] : formData.images.slice(1)
+                            })
+                          }
+                          className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#4a5a3f] cursor-text"
                         />
                         <button
                           type="button"
-                          onClick={() => setFormData({ ...formData, image_back: "" })}
-                          className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600 transition-colors cursor-pointer"
-                          title="Eliminar imagen trasera"
+                          onClick={() => {
+                            const currentImages = formData.images.filter(img => img && img.trim() !== '');
+                            const newImages = [...currentImages];
+                            if (formData.main_image && !newImages.includes(formData.main_image)) {
+                              newImages[0] = formData.main_image;
+                            }
+                            setFormData({ ...formData, images: newImages });
+                          }}
+                          className="px-4 py-2 bg-[#4a5a3f] text-white rounded-md hover:bg-[#3d4a34] transition-colors cursor-pointer"
                         >
-                          ×
+                          Agregar
                         </button>
+                      </div>
+                      <div className="flex gap-2">
+                        <input
+                          type="url"
+                          placeholder="URL de imagen 2 (trasera)"
+                          value={formData.images[1] || ''}
+                          onChange={(e) => {
+                            const currentImages = formData.images.filter(img => img && img.trim() !== '');
+                            const newImages = [...currentImages];
+                            if (e.target.value) {
+                              newImages[1] = e.target.value;
+                            } else {
+                              newImages.splice(1, 1);
+                            }
+                            setFormData({ 
+                              ...formData, 
+                              images: newImages
+                            });
+                          }}
+                          className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#4a5a3f] cursor-text"
+                        />
+                      </div>
+                      <div className="flex gap-2">
+                        <input
+                          type="url"
+                          placeholder="URL de imagen 3"
+                          value={formData.images[2] || ''}
+                          onChange={(e) => {
+                            const currentImages = formData.images.filter(img => img && img.trim() !== '');
+                            const newImages = [...currentImages];
+                            if (e.target.value) {
+                              newImages[2] = e.target.value;
+                            } else {
+                              newImages.splice(2, 1);
+                            }
+                            setFormData({ ...formData, images: newImages });
+                          }}
+                          className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#4a5a3f] cursor-text"
+                        />
+                      </div>
+                      <div className="flex gap-2">
+                        <input
+                          type="url"
+                          placeholder="URL de imagen 4"
+                          value={formData.images[3] || ''}
+                          onChange={(e) => {
+                            const currentImages = formData.images.filter(img => img && img.trim() !== '');
+                            const newImages = [...currentImages];
+                            if (e.target.value) {
+                              newImages[3] = e.target.value;
+                            } else {
+                              newImages.splice(3, 1);
+                            }
+                            setFormData({ ...formData, images: newImages });
+                          }}
+                          className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#4a5a3f] cursor-text"
+                        />
                       </div>
                     </div>
                   )}
+                  
+                  {/* Image Gallery Preview */}
+                  <div className="mt-4">
+                    {formData.images.filter(img => img && img.trim() !== '').length > 0 ? (
+                      <div>
+                        <p className="text-sm font-medium text-gray-700 mb-2">
+                          Galería de imágenes ({formData.images.filter(img => img && img.trim() !== '').length}):
+                        </p>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                          {formData.images
+                            .filter(img => img && img.trim() !== '')
+                            .map((image, index) => (
+                            <div key={index} className="relative group">
+                              <img
+                                src={image}
+                                alt={`Imagen ${index + 1}`}
+                                className="w-full h-24 object-cover rounded-lg border-2 border-gray-200 shadow-sm"
+                                onError={(e) => {
+                                  console.error('Error loading image:', image);
+                                  e.currentTarget.src = '/placeholder.svg';
+                                }}
+                              />
+                              <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-all duration-200 rounded-lg flex items-center justify-center">
+                                <div className="opacity-0 group-hover:opacity-100 flex gap-1">
+                                  {index !== 0 && (
+                                    <button
+                                      type="button"
+                                      onClick={() => setMainImage(index)}
+                                      className="p-1 bg-blue-500 text-white rounded-full hover:bg-blue-600 transition-colors cursor-pointer"
+                                      title="Establecer como principal"
+                                    >
+                                      ⭐
+                                    </button>
+                                  )}
+                                  <button
+                                    type="button"
+                                    onClick={() => removeImage(index)}
+                                    className="p-1 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors cursor-pointer"
+                                    title="Eliminar imagen"
+                                  >
+                                    ×
+                                  </button>
+                                </div>
+                              </div>
+                              {index === 0 && (
+                                <div className="absolute top-1 left-1 bg-yellow-500 text-white text-xs px-1 py-0.5 rounded">
+                                  Principal
+                                </div>
+                              )}
+                              {index === 1 && (
+                                <div className="absolute top-1 left-1 bg-blue-500 text-white text-xs px-1 py-0.5 rounded">
+                                  Trasera
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="text-center py-8 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
+                        <svg className="w-12 h-12 text-gray-400 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                        <p className="text-sm text-gray-500 font-medium">No hay imágenes en la galería</p>
+                        <p className="text-xs text-gray-400 mt-1">Sube imágenes o ingresa URLs para verlas aquí</p>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
+              
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Cantidad en Stock
@@ -1871,6 +2267,9 @@ export default function AdminProducts() {
                 onClick={() => {
                   setIsCreating(false);
                   setEditingProduct(null);
+                  setImageUploadType('url');
+                  setUploadedImageUrls([]);
+                  setSelectedImages([]);
                 }}
                 className="bg-gray-500 text-white px-6 py-2 rounded-md hover:bg-gray-600 transition-colors cursor-pointer"
               >
@@ -1893,7 +2292,7 @@ export default function AdminProducts() {
               onChange={(e) => setStatusFilter(e.target.value)}
               className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#4a5a3f] cursor-pointer"
             >
-              <option value="all">Todos ({products.length})</option>
+              <option value="all">Todos ({totalProducts})</option>
               <option value="active">Activos ({products.filter(p => p.status === 'active').length})</option>
               <option value="inactive">Inactivos ({products.filter(p => p.status === 'inactive').length})</option>
               <option value="draft">Borradores ({products.filter(p => p.status === 'draft').length})</option>
@@ -1971,7 +2370,7 @@ export default function AdminProducts() {
                     <div className="flex items-center">
                       <img
                         className="h-12 w-12 rounded-lg object-cover"
-                        src={product.image}
+                        src={product.main_image || product.image || '/placeholder.svg'}
                         alt={product.name}
                       />
                       <div className="ml-4">
@@ -2095,6 +2494,35 @@ export default function AdminProducts() {
               ))}
             </tbody>
           </table>
+        </div>
+        
+        {/* Información de paginación y botón de cargar más */}
+        <div className="bg-gray-50 px-6 py-4 border-t border-gray-200">
+          <div className="flex items-center justify-between">
+            <div className="text-sm text-gray-700">
+              Mostrando {products.length} de {totalProducts} productos
+              {totalPages > 1 && (
+                <span className="ml-2">
+                  (Página {currentPage} de {totalPages})
+                </span>
+              )}
+            </div>
+            
+            {currentPage < totalPages && (
+              <button
+                onClick={loadMoreProducts}
+                disabled={isLoadingMore}
+                className={`px-4 py-2 rounded-md transition-colors cursor-pointer flex items-center gap-2 ${
+                  isLoadingMore 
+                    ? 'bg-gray-400 text-gray-200 cursor-not-allowed' 
+                    : 'bg-[#4a5a3f] text-white hover:bg-[#3d4a34]'
+                }`}
+              >
+                {isLoadingMore && <LoadingSpinner size="sm" color="white" />}
+                {isLoadingMore ? 'Cargando...' : 'Cargar más productos'}
+              </button>
+            )}
+          </div>
         </div>
       </div>
 

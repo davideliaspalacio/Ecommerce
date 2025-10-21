@@ -10,10 +10,12 @@ export interface ProductType {
     current_price?: number;
     savings_amount?: number;
     discount_active?: boolean;
-    image: string;
+    images: string[];
+    main_image: string;
+    image?: string;
     image_back?: string;
-    category: 'CAMISETA' | 'SUDADERA' | 'TOP' | 'JEAN' | 'JOGGER' | 'GORRA' | 'ACCESORIO';
-    gender: 'HOMBRE' | 'MUJER' | 'UNISEX';
+    category: 'camiseta' | 'sudadera' | 'top' | 'jean' | 'jogger' | 'gorra' | 'accesorio';
+    gender: 'hombre' | 'mujer' | 'unisex';
     description?: string;
     specifications: string[];
     sizes: string[];
@@ -41,10 +43,12 @@ export interface CreateProductType {
     is_on_discount?: boolean;
     discount_start_date?: string;
     discount_end_date?: string;
-    image: string;
+    images: string[];
+    main_image: string;
+    image?: string;
     image_back?: string;
-    category: 'CAMISETA' | 'SUDADERA' | 'TOP' | 'JEAN' | 'JOGGER' | 'GORRA' | 'ACCESORIO';
-    gender: 'HOMBRE' | 'MUJER' | 'UNISEX';
+    category: 'camiseta' | 'sudadera' | 'top' | 'jean' | 'jogger' | 'gorra' | 'accesorio';
+    gender: 'hombre' | 'mujer' | 'unisex';
     description?: string;
     specifications?: string[];
     sizes?: string[];
@@ -119,4 +123,57 @@ export const getDiscountPercentage = (product: ProductType): number => {
   }
   
   return 0;
+};
+export interface ProductImages {
+  mainImage: string;
+  gallery: string[];
+  totalImages: number;
+}
+
+export interface ImageUploadResponse {
+  image_urls: string[];
+}
+
+export interface UpdateImagesRequest {
+  image_urls: string[];
+}
+
+export interface DeleteImageRequest {
+  image_url: string;
+}
+
+export const mapProductImages = (product: ProductType): ProductImages => {
+  if (product.images && product.images.length > 0) {
+    return {
+      mainImage: product.main_image || product.images[0],
+      gallery: product.images,
+      totalImages: product.images.length
+    };
+  }
+  
+  const legacyImages: string[] = [];
+  if (product.image) legacyImages.push(product.image);
+  if (product.image_back) legacyImages.push(product.image_back);
+  
+  return {
+    mainImage: product.image || '',
+    gallery: legacyImages,
+    totalImages: legacyImages.length
+  };
+};
+
+export const getMainImage = (product: ProductType): string => {
+  return product.main_image || product.image || '';
+};
+
+export const getAllImages = (product: ProductType): string[] => {
+  if (product.images && product.images.length > 0) {
+    return product.images;
+  }
+  
+  const legacyImages: string[] = [];
+  if (product.image) legacyImages.push(product.image);
+  if (product.image_back) legacyImages.push(product.image_back);
+  
+  return legacyImages;
 };

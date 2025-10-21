@@ -17,6 +17,8 @@ export default function ShoppingCart() {
     removeFromCart,
     getTotal,
     getItemPrice,
+    backendTotal,
+    backendSavings,
   } = useCartStore();
   const {
     isAuthModalOpen,
@@ -25,6 +27,7 @@ export default function ShoppingCart() {
   } = useUIStore();
   const { user } = useAuthContext();
   const [isCartClosing, setIsCartClosing] = useState(false);
+  // Ya no necesitamos estado separado para el total, viene en el carrito
   const handleCloseCart = () => {
     setIsCartClosing(true);
     setTimeout(() => {
@@ -32,6 +35,8 @@ export default function ShoppingCart() {
       setIsCartClosing(false);
     }, 400);
   };
+
+  // Ya no necesitamos fetchCartTotal, el total viene en el carrito
 
   const handleCheckoutClick = () => {
     if (!user) {
@@ -116,20 +121,27 @@ export default function ShoppingCart() {
               </div>
             ) : (
               <div className="space-y-4">
-                {cart.map((item, index) => (
-                  <div
-                    key={`${item.product.id}-${item.size}-${index}`}
-                    className="flex gap-4 pb-4 border-b animate-fade-in-up"
-                    style={{ animationDelay: `${index * 0.1}s` }}
-                  >
-                    <div className="relative w-24 h-24 bg-gray-100 flex-shrink-0">
-                      <Image
-                        src={item.product.image || "/placeholder.svg"}
-                        alt={item.product.name}
-                        fill
-                        className="object-cover"
-                      />
-                    </div>
+                {cart.map((item, index) => {
+                  // Verificar que el producto existe antes de renderizar
+                  if (!item.product) {
+                    console.warn('Cart item missing product data:', item);
+                    return null;
+                  }
+                  
+                  return (
+                    <div
+                      key={`${item.product.id}-${item.size}-${index}`}
+                      className="flex gap-4 pb-4 border-b animate-fade-in-up"
+                      style={{ animationDelay: `${index * 0.1}s` }}
+                    >
+                      <div className="relative w-24 h-24 bg-gray-100 flex-shrink-0">
+                        <Image
+                          src={item.product.image || "/placeholder.svg"}
+                          alt={item.product.name || "Producto"}
+                          fill
+                          className="object-cover"
+                        />
+                      </div>
 
                     <div className="flex-1 min-w-0">
                       <h3 className="font-medium text-sm mb-1 line-clamp-2">
@@ -142,18 +154,18 @@ export default function ShoppingCart() {
                         {isDiscountActive(item.product) ? (
                           <>
                             <div className="flex items-center gap-2">
-                              <span className="text-lg font-bold discount-price">
+                              <span className="text-lg font-bold text-green-600">
                                 ${getCurrentPrice(item.product).toLocaleString("es-CO")}
                               </span>
-                              <span className="px-2 py-1 discount-badge text-xs font-bold rounded-full">
+                              <span className="px-2 py-1 bg-red-100 text-red-600 text-xs font-bold rounded-full animate-pulse">
                                 -{getDiscountPercentage(item.product)}% OFF
                               </span>
                             </div>
-                            <div className="text-sm original-price">
-                              ${item.product.original_price?.toLocaleString("es-CO")}
+                            <div className="text-sm text-gray-500 line-through">
+                              ${(item.product.original_price || getCurrentPrice(item.product)).toLocaleString("es-CO")}
                             </div>
-                            <div className="text-xs savings-text font-medium">
-                              Ahorras: ${getSavingsAmount(item.product).toLocaleString("es-CO")}
+                            <div className="text-xs text-green-600 font-medium bg-green-50 px-2 py-1 rounded">
+                              💰 Ahorras: ${getSavingsAmount(item.product).toLocaleString("es-CO")}
                             </div>
                           </>
                         ) : (
@@ -205,7 +217,8 @@ export default function ShoppingCart() {
                       </div>
                     </div>
                   </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>
@@ -213,9 +226,17 @@ export default function ShoppingCart() {
           {/* Footer del carrito con total */}
           {cart.length > 0 && (
             <div className="border-t p-6 space-y-4">
-              <div className="flex items-center justify-between text-lg font-bold">
-                <span>TOTAL</span>
-                <span>${getTotal().toLocaleString("es-CO")}</span>
+              <div className="space-y-2">
+                {backendSavings > 0 && (
+                  <div className="flex items-center justify-between text-sm text-green-600">
+                    <span>Ahorras</span>
+                    <span>${backendSavings.toLocaleString("es-CO")}</span>
+                  </div>
+                )}
+                <div className="flex items-center justify-between text-lg font-bold">
+                  <span>TOTAL</span>
+                  <span>${(backendTotal || getTotal()).toLocaleString("es-CO")}</span>
+                </div>
               </div>
 
               <button

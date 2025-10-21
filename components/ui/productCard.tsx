@@ -8,17 +8,21 @@ import { useUIStore } from "@/store/uiStore";
 import { useProductsContext } from "@/contexts/ProductsContext";
 import { useFilteredProducts } from "@/hooks/useFilteredProducts";
 import { useProductUrl } from "@/hooks/useProductUrl";
-import { getCurrentPrice, getSavingsAmount, isDiscountActive, getDiscountPercentage } from "@/components/types/Product";
+import { getCurrentPrice, getSavingsAmount, isDiscountActive, getDiscountPercentage, getMainImage, getAllImages } from "@/components/types/Product";
 import { useWishlistStore } from "@/store/wishlistStore";
 import { useAuthContext } from "@/contexts/AuthContext";
 
 export default function ProductsCards() {
   const { genderFilter, setGenderFilter, selectedProduct, setSelectedProduct, setSelectedSize, setCurrentImageIndex, openAuthModal } = useUIStore();
-  const { loading, error, fetchProducts, fetchProductsByGender } = useProductsContext();
+  const { products, loading, error, fetchProducts, fetchProductsByGender } = useProductsContext();
   const { openProductFromUrl, generateProductUrl } = useProductUrl();
   const { filteredProducts, isFiltering } = useFilteredProducts();
   const { isInWishlist, toggleWishlist, isLoading } = useWishlistStore();
   const { user } = useAuthContext();
+
+  // Debug: ver qué productos estamos recibiendo
+  console.log('Products en ProductsCards:', products)
+  console.log('Filtered products:', filteredProducts)
 
   // Los productos ya vienen limitados desde la API (8 productos)
   const limitedProducts = filteredProducts;
@@ -87,23 +91,22 @@ export default function ProductsCards() {
                   <div className="relative mb-4">
                     <div className="dib relative hoverEffect w-full h-80 overflow-hidden">
                       <Image
-                        src={product.image || "/placeholder.svg"}
+                        src={getMainImage(product) || "/placeholder.svg"}
                         alt={product.name}
                         width={500}
                         height={748}
                         className="w-full h-full object-cover transition-opacity duration-300 group-hover:opacity-0"
                       />
-                      <Image
-                        src={
-                          product.image_back ||
-                          product.image ||
-                          "/placeholder.svg"
-                        }
-                        alt={product.name}
-                        width={500}
-                        height={748}
-                        className="w-full h-full absolute top-0 left-0 z-10 object-cover opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-                      />
+                      {/* Hover image - show second image if available */}
+                      {getAllImages(product).length > 1 && (
+                        <Image
+                          src={getAllImages(product)[1] || getMainImage(product) || "/placeholder.svg"}
+                          alt={product.name}
+                          width={500}
+                          height={748}
+                          className="w-full h-full absolute top-0 left-0 z-10 object-cover opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                        />
+                      )}
                     </div>
                     
                     {/* Botón de Wishlist */}
@@ -172,7 +175,7 @@ export default function ProductsCards() {
                             <span className="text-sm">$</span>
                             <span className="text-sm">&nbsp;</span>
                             <span className="text-lg">
-                              {product.price.toLocaleString()}
+                              {getCurrentPrice(product).toLocaleString()}
                             </span>
                           </span>
                         )}

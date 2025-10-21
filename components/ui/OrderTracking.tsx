@@ -3,19 +3,16 @@
 import { useState } from "react";
 import { useOrderTracking } from "@/hooks/useOrderTracking";
 import { 
-  Clock, 
-  CheckCircle, 
-  Package, 
   Truck, 
   MapPin, 
   MessageCircle, 
-  Bell,
   Calendar,
-  User,
-  AlertCircle,
+  CheckCircle,
+  Send,
+  Clock,
+  Package,
   XCircle,
-  RotateCcw,
-  Send
+  RotateCcw
 } from "lucide-react";
 
 interface OrderTrackingProps {
@@ -29,15 +26,20 @@ export default function OrderTracking({ orderId, userId }: OrderTrackingProps) {
   const [sendingMessage, setSendingMessage] = useState(false);
 
   const {
-    statusHistory,
     communications,
     shippingTracking,
-    notifications,
+    statusHistory,
     loading,
     error,
-    markNotificationAsRead,
     sendMessage
   } = useOrderTracking(orderId, userId);
+
+  // Debug logs
+  console.log('OrderTracking - communications:', communications);
+  console.log('OrderTracking - shippingTracking:', shippingTracking);
+  console.log('OrderTracking - statusHistory:', statusHistory);
+  console.log('OrderTracking - loading:', loading);
+  console.log('OrderTracking - error:', error);
 
   const handleSendMessage = async () => {
     if (!newMessage.trim()) return;
@@ -52,6 +54,17 @@ export default function OrderTracking({ orderId, userId }: OrderTrackingProps) {
     }
     
     setSendingMessage(false);
+  };
+
+
+
+  const getSenderInfo = (senderType: string) => {
+    const senderMap = {
+      customer: { label: "Tú", color: "text-blue-600", bgColor: "bg-blue-100" },
+      admin: { label: "Soporte", color: "text-green-600", bgColor: "bg-green-100" },
+      system: { label: "Sistema", color: "text-gray-600", bgColor: "bg-gray-100" }
+    };
+    return senderMap[senderType as keyof typeof senderMap] || senderMap.system;
   };
 
   const getStatusInfo = (status: string) => {
@@ -149,15 +162,6 @@ export default function OrderTracking({ orderId, userId }: OrderTrackingProps) {
     return statusMap[status as keyof typeof statusMap] || statusMap.pending;
   };
 
-  const getSenderInfo = (senderType: string) => {
-    const senderMap = {
-      customer: { label: "Tú", color: "text-blue-600", bgColor: "bg-blue-100" },
-      admin: { label: "Soporte", color: "text-green-600", bgColor: "bg-green-100" },
-      system: { label: "Sistema", color: "text-gray-600", bgColor: "bg-gray-100" }
-    };
-    return senderMap[senderType as keyof typeof senderMap] || senderMap.system;
-  };
-
   if (loading) {
     return (
       <div className="bg-white rounded-1xl shadow-sm p-6">
@@ -177,7 +181,6 @@ export default function OrderTracking({ orderId, userId }: OrderTrackingProps) {
     return (
       <div className="bg-white rounded-1xl shadow-sm p-6">
         <div className="text-center py-8">
-          <AlertCircle className="w-12 h-12 text-red-300 mx-auto mb-3" />
           <p className="text-red-600 font-medium">Error al cargar el seguimiento</p>
           <p className="text-sm text-gray-500 mt-1">{error}</p>
         </div>
@@ -245,98 +248,67 @@ export default function OrderTracking({ orderId, userId }: OrderTrackingProps) {
                 Historial de Estados
               </h4>
               <div className="space-y-4">
-                {statusHistory.map((status, index) => {
-                  const statusInfo = getStatusInfo(status.status);
-                  const Icon = statusInfo.icon;
-                  const isLast = index === statusHistory.length - 1;
-                  
-                  return (
-                    <div key={status.id} className="relative flex items-start">
-                      {/* Línea vertical */}
-                      {!isLast && (
-                        <div className="absolute left-4 top-8 w-0.5 h-8 bg-gray-200"></div>
-                      )}
-                      
-                      {/* Icono */}
-                      <div className={`flex-shrink-0 w-8 h-8 rounded-full ${statusInfo.bgColor} ${statusInfo.borderColor} border-2 flex items-center justify-center`}>
-                        <Icon className={`w-4 h-4 ${statusInfo.color}`} />
-                      </div>
-                      
-                      {/* Contenido */}
-                      <div className="ml-4 flex-1">
-                        <div className="flex items-center justify-between">
-                          <h5 className={`text-sm font-medium ${statusInfo.color}`}>
-                            {statusInfo.label}
-                          </h5>
-                          <span className="text-xs text-gray-500">
-                            {new Date(status.created_at).toLocaleDateString("es-CO", {
-                              day: "2-digit",
-                              month: "2-digit",
-                              year: "numeric",
-                              hour: "2-digit",
-                              minute: "2-digit"
-                            })}
-                          </span>
-                        </div>
-                        <p className="text-sm text-gray-600 mt-1">
-                          {statusInfo.description}
-                        </p>
-                        {status.notes && (
-                          <p className="text-xs text-gray-500 mt-1 italic">
-                            "{status.notes}"
-                          </p>
+                {statusHistory.length > 0 ? (
+                  statusHistory.map((status, index) => {
+                    const statusInfo = getStatusInfo(status.status);
+                    const Icon = statusInfo.icon;
+                    const isLast = index === statusHistory.length - 1;
+                    
+                    return (
+                      <div key={status.id} className="relative flex items-start">
+                        {/* Línea vertical */}
+                        {!isLast && (
+                          <div className="absolute left-4 top-8 w-0.5 h-8 bg-gray-200"></div>
                         )}
-                        <div className="flex items-center mt-1">
-                          <span className="text-xs text-gray-400">
-                            {status.updated_by_type === 'admin' ? 'Soporte' : 
-                             status.updated_by_type === 'customer' ? 'Tú' : 'Sistema'}
-                          </span>
+                        
+                        {/* Icono */}
+                        <div className={`flex-shrink-0 w-8 h-8 rounded-full ${statusInfo.bgColor} ${statusInfo.borderColor} border-2 flex items-center justify-center`}>
+                          <Icon className={`w-4 h-4 ${statusInfo.color}`} />
+                        </div>
+                        
+                        {/* Contenido */}
+                        <div className="ml-4 flex-1">
+                          <div className="flex items-center justify-between">
+                            <h5 className={`text-sm font-medium ${statusInfo.color}`}>
+                              {statusInfo.label}
+                            </h5>
+                            <span className="text-xs text-gray-500">
+                              {new Date(status.created_at).toLocaleDateString("es-CO", {
+                                day: "2-digit",
+                                month: "2-digit",
+                                year: "numeric",
+                                hour: "2-digit",
+                                minute: "2-digit"
+                              })}
+                            </span>
+                          </div>
+                          <p className="text-sm text-gray-600 mt-1">
+                            {statusInfo.description}
+                          </p>
+                          {status.notes && (
+                            <p className="text-xs text-gray-500 mt-1 italic">
+                              "{status.notes}"
+                            </p>
+                          )}
+                          <div className="flex items-center mt-1">
+                            <span className="text-xs text-gray-400">
+                              {status.updated_by_type === 'admin' ? 'Soporte' : 
+                               status.updated_by_type === 'customer' ? 'Tú' : 'Sistema'}
+                            </span>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })
+                ) : (
+                  <div className="text-center py-8">
+                    <Clock className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                    <p className="text-gray-500">No hay historial de estados</p>
+                    <p className="text-sm text-gray-400">Los cambios de estado aparecerán aquí</p>
+                  </div>
+                )}
               </div>
             </div>
-
-            {/* Notificaciones recientes */}
-            {notifications.length > 0 && (
-              <div>
-                <h4 className="text-md font-semibold text-gray-900 mb-4 flex items-center">
-                  <Bell className="w-5 h-5 mr-2" />
-                  Notificaciones Recientes
-                </h4>
-                <div className="space-y-3">
-                  {notifications.slice(0, 3).map((notification) => (
-                    <div key={notification.id} className={`p-3 rounded-lg border ${
-                      notification.is_read ? 'bg-gray-50 border-gray-200' : 'bg-blue-50 border-blue-200'
-                    }`}>
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <h5 className="text-sm font-medium text-gray-900">
-                            {notification.title}
-                          </h5>
-                          <p className="text-sm text-gray-600 mt-1">
-                            {notification.message}
-                          </p>
-                        </div>
-                        {!notification.is_read && (
-                          <div className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0 mt-1"></div>
-                        )}
-                      </div>
-                      <span className="text-xs text-gray-500">
-                        {new Date(notification.created_at).toLocaleDateString("es-CO", {
-                          day: "2-digit",
-                          month: "2-digit",
-                          hour: "2-digit",
-                          minute: "2-digit"
-                        })}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
           </div>
         )}
 

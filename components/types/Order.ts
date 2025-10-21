@@ -13,6 +13,7 @@ export interface ShippingInfoType {
   postal_code?: string;
   neighborhood?: string;
   additional_info?: string;
+  notes?: string;
 }
 
 export interface OrderType {

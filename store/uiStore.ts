@@ -7,7 +7,7 @@ interface UIStore {
   isPurchaseModalOpen: boolean;
   isSuccessModalOpen: boolean;
   isEpaycoCheckoutOpen: boolean;
-  genderFilter: "TODOS" | "HOMBRE" | "MUJER";
+  genderFilter: "TODOS" | "hombre" | "mujer";
   selectedProduct: any | null;
   selectedSize: string;
   currentImageIndex: number;
@@ -37,7 +37,7 @@ interface UIStore {
   closeEpaycoCheckout: () => void;
 
   // Acciones de filtros
-  setGenderFilter: (filter: "TODOS" | "HOMBRE" | "MUJER") => void;
+  setGenderFilter: (filter: "TODOS" | "hombre" | "mujer") => void;
   setSelectedCategories: (categories: string[]) => void;
   setSelectedPriceRange: (range: { min: number; max: number } | null) => void;
   toggleCategory: (category: string) => void;

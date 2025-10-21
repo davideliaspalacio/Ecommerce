@@ -414,7 +414,7 @@ export default function Header() {
                           openAuthModal();
                           toggleMobileMenu();
                         }}
-                        className="px-4 py-2 bg-[#4a5a3f] text-white rounded-lg hover:bg-[#3a4a2f] transition-colors font-medium"
+                        className="px-4 py-2 bg-[#4a5a3f] text-white rounded-1xl hover:bg-[#3a4a2f] transition-colors font-medium"
                       >
                         Iniciar Sesión
                       </button>

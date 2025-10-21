@@ -3,17 +3,12 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuthContext } from "@/contexts/AuthContext";
-import { createClient } from "@supabase/supabase-js";
+import { apiClient } from "@/lib/api-client";
 import { OrderType } from "@/components/types/Order";
 import Link from "next/link";
 import Header from "@/components/ui/header";
 import FooterSection from "@/components/ui/footerSection";
 import ShoppingCart from "@/components/ui/shoppingCart";
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
 
 export default function MyOrdersPage() {
   const { user, loading: authLoading } = useAuthContext();
@@ -59,15 +54,13 @@ export default function MyOrdersPage() {
   const fetchOrders = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
-        .from("orders")
-        .select("*")
-        .eq("user_id", user!.id)
-        .order("created_at", { ascending: false });
+      const response = await apiClient.getOrders();
 
-      if (error) throw error;
+      if (!response.success) {
+        throw new Error(response.error || 'Error al cargar órdenes');
+      }
 
-      setOrders(data || []);
+      setOrders(response.data || []);
     } catch (err: any) {
       console.error("Error fetching orders:", err);
       setError("Error al cargar tus órdenes");

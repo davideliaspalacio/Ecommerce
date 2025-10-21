@@ -194,7 +194,7 @@ export default function CreditCardForm({
       <div className="border-t pt-4 mt-4">
         <h3 className="font-medium mb-3">Información del titular</h3>
         
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
             <label className="block text-sm font-medium mb-2">Tipo de documento</label>
             <select

@@ -1,17 +1,11 @@
 import { useState, useEffect } from 'react';
-import { createClient } from '@supabase/supabase-js';
-import { OrderStatusHistoryType, OrderCommunicationType, ShippingTrackingType, OrderNotificationType } from '@/components/types/Order';
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+import { apiClient } from '@/lib/api-client';
+import { OrderCommunicationType, ShippingTrackingType, OrderStatusHistoryType } from '@/components/types/Order';
 
 export function useOrderTracking(orderId: string, userId: string) {
-  const [statusHistory, setStatusHistory] = useState<OrderStatusHistoryType[]>([]);
   const [communications, setCommunications] = useState<OrderCommunicationType[]>([]);
   const [shippingTracking, setShippingTracking] = useState<ShippingTrackingType | null>(null);
-  const [notifications, setNotifications] = useState<OrderNotificationType[]>([]);
+  const [statusHistory, setStatusHistory] = useState<OrderStatusHistoryType[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -20,47 +14,55 @@ export function useOrderTracking(orderId: string, userId: string) {
       setLoading(true);
       setError(null);
       
-      // Fetch status history
-      const { data: historyData, error: historyError } = await supabase
-        .from('order_status_history')
-        .select('*')
-        .eq('order_id', orderId)
-        .order('created_at', { ascending: true });
+      // Fetch communications, shipping tracking, and status history
+      const [commResponse, trackingResponse, statusResponse] = await Promise.all([
+        apiClient.getOrderCommunications(orderId),
+        apiClient.getOrderTracking(orderId),
+        apiClient.getOrderStatusTimeline(orderId)
+      ]);
 
-      if (historyError) throw historyError;
+      if (!commResponse.success) {
+        throw new Error(commResponse.error || 'Error al cargar comunicaciones');
+      }
 
-      // Fetch communications
-      const { data: commData, error: commError } = await supabase
-        .from('order_communications')
-        .select('*')
-        .eq('order_id', orderId)
-        .order('created_at', { ascending: true });
+      if (!trackingResponse.success) {
+        throw new Error(trackingResponse.error || 'Error al cargar seguimiento');
+      }
 
-      if (commError) throw commError;
+      if (!statusResponse.success) {
+        throw new Error(statusResponse.error || 'Error al cargar historial de estados');
+      }
 
-      // Fetch shipping tracking
-      const { data: shippingData, error: shippingError } = await supabase
-        .from('shipping_tracking')
-        .select('*')
-        .eq('order_id', orderId)
-        .single();
+      // El endpoint de comunicaciones devuelve { data: [...] }
+      const communicationsData = Array.isArray(commResponse.data) 
+        ? commResponse.data 
+        : commResponse.data?.data || [];
+      console.log('Communications response:', commResponse);
+      console.log('Communications data:', communicationsData);
+      
+      // Ordenar mensajes por fecha de creación (más antiguos primero)
+      const sortedCommunications = communicationsData
+        .map((comm: any) => ({
+          ...comm,
+          read_at: comm.read_at || undefined
+        }))
+        .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+      
+      setCommunications(sortedCommunications);
 
-      if (shippingError && shippingError.code !== 'PGRST116') throw shippingError;
+      // El endpoint de tracking devuelve un array directamente
+      const trackingData = Array.isArray(trackingResponse.data) 
+        ? trackingResponse.data[0] || null 
+        : trackingResponse.data;
+      console.log('Tracking response:', trackingResponse);
+      console.log('Tracking data:', trackingData);
+      setShippingTracking(trackingData);
 
-      // Fetch notifications
-      const { data: notifData, error: notifError } = await supabase
-        .from('order_notifications')
-        .select('*')
-        .eq('order_id', orderId)
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false });
-
-      if (notifError) throw notifError;
-
-      setStatusHistory(historyData || []);
-      setCommunications(commData || []);
-      setShippingTracking(shippingData);
-      setNotifications(notifData || []);
+      // El endpoint de status timeline devuelve un array directamente
+      const statusData = Array.isArray(statusResponse.data) ? statusResponse.data : [];
+      console.log('Status response:', statusResponse);
+      console.log('Status data:', statusData);
+      setStatusHistory(statusData);
     } catch (error: any) {
       console.error('Error fetching tracking data:', error);
       setError(error.message || 'Error al cargar el seguimiento');
@@ -69,54 +71,26 @@ export function useOrderTracking(orderId: string, userId: string) {
     }
   };
 
-  const markNotificationAsRead = async (notificationId: string) => {
-    try {
-      const { error } = await supabase
-        .from('order_notifications')
-        .update({ is_read: true, read_at: new Date().toISOString() })
-        .eq('id', notificationId);
-
-      if (error) throw error;
-
-      // Update local state
-      setNotifications(prev => 
-        prev.map(notif => 
-          notif.id === notificationId 
-            ? { ...notif, is_read: true, read_at: new Date().toISOString() }
-            : notif
-        )
-      );
-    } catch (error: any) {
-      console.error('Error marking notification as read:', error);
-    }
-  };
-
   const sendMessage = async (message: string, attachments?: any) => {
     try {
-      const { data, error } = await supabase
-        .from('order_communications')
-        .insert({
-          order_id: orderId,
-          sender_id: userId,
-          sender_type: 'customer',
-          message,
-          attachments,
-          is_internal: false
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      // Update local state
-      setCommunications(prev => [...prev, data]);
-
-      return { success: true, data };
+      const response = await apiClient.sendOrderMessage(orderId, message, false, attachments);
+      
+      if (response.success && response.data) {
+        const convertedMessage = {
+          ...response.data,
+          read_at: response.data.read_at || undefined
+        };
+        setCommunications(prev => [...prev, convertedMessage]);
+        return { success: true, data: convertedMessage };
+      } else {
+        return { success: false, error: response.error || 'Error al enviar mensaje' };
+      }
     } catch (error: any) {
       console.error('Error sending message:', error);
       return { success: false, error: error.message };
     }
   };
+
 
   useEffect(() => {
     if (orderId && userId) {
@@ -125,14 +99,12 @@ export function useOrderTracking(orderId: string, userId: string) {
   }, [orderId, userId]);
 
   return {
-    statusHistory,
     communications,
     shippingTracking,
-    notifications,
+    statusHistory,
     loading,
     error,
     fetchTrackingData,
-    markNotificationAsRead,
     sendMessage
   };
 }
