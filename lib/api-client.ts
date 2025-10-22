@@ -487,7 +487,7 @@ class ApiClient {
   }
 
   async getAdminProducts(page: number = 1, limit: number = 20) {
-    return this.request(`/products?page=${page}&limit=${limit}`)
+    return this.request(`/products/admin/all?page=${page}&limit=${limit}`)
   }
 
   async getAdminAnalytics() {

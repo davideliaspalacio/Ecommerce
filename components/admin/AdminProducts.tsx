@@ -112,10 +112,7 @@ export default function AdminProducts() {
         setIsLoadingMore(true);
       }
       
-      const response = await apiClient.getProducts({
-        page: page,
-        limit: 20 // Mostrar 20 productos por página en admin
-      });
+      const response = await apiClient.getAdminProducts(page, 20);
 
       if (!response.success) {
         throw new Error(response.error || 'Error al cargar los productos');
