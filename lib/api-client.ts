@@ -495,11 +495,65 @@ class ApiClient {
   }
 
 
-  async addShippingTracking(orderId: string, trackingData: any) {
-    return this.request(`/orders/${orderId}/tracking`, {
-      method: 'POST',
-      body: JSON.stringify(trackingData),
-    })
+  async addShippingTracking(orderId: string, trackingData: any, files?: File[]) {
+    if (files && files.length > 0) {
+      const formData = new FormData()
+      
+      Object.keys(trackingData).forEach(key => {
+        if (trackingData[key] !== null && trackingData[key] !== undefined && trackingData[key] !== '') {
+          formData.append(key, trackingData[key])
+        }
+      })
+      
+      files.forEach(file => {
+        formData.append('images', file)
+      })
+      
+      const url = `${this.baseURL}/orders/${orderId}/tracking`
+      
+      if (typeof window !== 'undefined') {
+        this.token = localStorage.getItem('auth_token')
+      }
+      
+      const headers: Record<string, string> = {}
+      
+      if (this.token) {
+        headers.Authorization = `Bearer ${this.token}`
+      }
+      
+      try {
+        const response = await fetch(url, {
+          method: 'POST',
+          headers,
+          body: formData,
+        })
+
+        const data = await response.json()
+
+        if (!response.ok) {
+          return {
+            success: false,
+            error: data.error || data.message || 'Request failed',
+          }
+        }
+
+        return {
+          success: true,
+          data: data.data || data,
+          message: data.message,
+        }
+      } catch (error) {
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : 'Network error',
+        }
+      }
+    } else {
+      return this.request(`/orders/${orderId}/tracking`, {
+        method: 'POST',
+        body: JSON.stringify(trackingData),
+      })
+    }
   }
 
   async sendMessageToCustomer(orderId: string, message: string) {
