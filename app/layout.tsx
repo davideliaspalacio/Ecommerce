@@ -12,6 +12,9 @@ import './globals.css'
 export const metadata: Metadata = {
   title: 'ENOUGH®',
   description: 'ENOUGH®',
+  icons: {
+    icon: '/favicon.png',
+  },
 }
 
 export default function RootLayout({

@@ -157,32 +157,21 @@ export default function SharedWishlistPage() {
                   </div>
                 )}
               </div>
-            </div>
-            
-            {/* Botones de acción */}
+            </div>            
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
               {sharedWishlist.products.length > 0 && (
                 <button
                   onClick={handlePurchaseWishlist}
-                  className="inline-flex items-center justify-center px-4 sm:px-6 py-2 sm:py-3 bg-[#4a5a3f] text-white font-medium rounded-lg hover:bg-[#3d4a34] transition-colors text-sm sm:text-base cursor-pointer"
+                  className="inline-flex items-center justify-center px-4 sm:px-6 py-2 sm:py-3 bg-[#4a5a3f] text-white font-medium rounded-1xl hover:bg-[#3d4a34] transition-colors text-sm sm:text-base cursor-pointer"
                 >
                   <ShoppingCart className="w-4 h-4 mr-2 flex-shrink-0" />
                   <span className="truncate">Comprar Wishlist</span>
                 </button>
               )}
-              <a
-                href="/"
-                className="inline-flex items-center justify-center px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors text-sm sm:text-base cursor-pointer"
-              >
-                <ArrowLeft className="w-4 h-4 mr-2 flex-shrink-0" />
-                <span className="truncate">Volver al inicio</span>
-              </a>
             </div>
           </div>
         </div>
       </div>
-
-      {/* Contenido */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {sharedWishlist.products.length === 0 ? (
           <div className="text-center py-16">
@@ -294,15 +283,13 @@ export default function SharedWishlistPage() {
             </p>
             <a
               href="/"
-              className="inline-flex items-center justify-center px-4 sm:px-6 py-2 sm:py-3 bg-[#4a5a3f] text-white font-medium rounded-lg hover:bg-[#3d4a34] transition-colors text-sm sm:text-base"
+              className="inline-flex items-center justify-center px-4 sm:px-6 py-2 sm:py-3 bg-[#4a5a3f] text-white font-medium rounded-1xl hover:bg-[#3d4a34] transition-colors text-sm sm:text-base"
             >
               Explorar productos
             </a>
           </div>
         </div>
       </div>
-
-      {/* Modal de Confirmación de Compra */}
       {showPurchaseModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg max-w-md w-full max-h-[90vh] overflow-y-auto">
