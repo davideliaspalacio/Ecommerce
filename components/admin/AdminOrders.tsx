@@ -149,9 +149,9 @@ export default function AdminOrders() {
     }
   };
 
-  const addShippingTracking = async (orderId: string, trackingData: any) => {
+  const addShippingTracking = async (orderId: string, trackingData: any, files?: File[]) => {
     try {
-      const response = await apiClient.addShippingTracking(orderId, trackingData);
+      const response = await apiClient.addShippingTracking(orderId, trackingData, files);
 
       if (!response.success) {
         throw new Error(response.error || "Error al agregar información de envío");

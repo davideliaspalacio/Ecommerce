@@ -109,6 +109,7 @@ export interface ShippingTrackingType {
   status_description?: string;
   location?: string;
   notes?: string;
+  images?: string[];
   created_by?: string;
   created_at: string;
   updated_at: string;

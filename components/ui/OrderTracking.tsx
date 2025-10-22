@@ -475,6 +475,22 @@ export default function OrderTracking({ orderId, userId }: OrderTrackingProps) {
                     <p className="text-gray-900">{shippingTracking.notes}</p>
                   </div>
                 )}
+
+                {(shippingTracking as any).images && (shippingTracking as any).images.length > 0 && (
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    <h5 className="text-sm font-medium text-gray-900 mb-3">Imágenes de Seguimiento</h5>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      {(shippingTracking as any).images.map((imageUrl: string, imgIndex: number) => (
+                        <img
+                          key={imgIndex}
+                          src={imageUrl}
+                          alt={`Imagen de seguimiento ${imgIndex + 1}`}
+                          className="w-full object-contain rounded-lg"
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>

@@ -42,7 +42,7 @@ interface OrderDetailsModalProps {
   onClose: () => void;
   onStatusUpdate: (orderId: string, newStatus: string, notes?: string) => void;
   onSendMessage: (orderId: string, message: string) => void;
-  onAddShipping: (orderId: string, trackingData: any) => void;
+  onAddShipping: (orderId: string, trackingData: any, files?: File[]) => void;
   onOrderUpdate?: (updatedOrder: OrderType) => void;
 }
 
@@ -71,6 +71,7 @@ export default function OrderDetailsModal({
     estimated_delivery: "",
     notes: ""
   });
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   
   // Refs para auto-scroll
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -136,6 +137,7 @@ export default function OrderDetailsModal({
         : [];
       
       console.log('Shipping tracking data:', shipping);
+      console.log('Images in shipping data:', shipping.map(s => s.images));
 
       setStatusHistory(history || []);
       setCommunications(comms || []);
@@ -753,6 +755,22 @@ export default function OrderDetailsModal({
                             </div>
                           )}
                           
+                          {(info as any).images && (info as any).images.length > 0 && (
+                            <div className="mt-4">
+                              <label className="text-xs font-medium text-gray-700 uppercase tracking-wide">Imágenes</label>
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-2">
+                                {(info as any).images.map((imageUrl: string, imgIndex: number) => (
+                                  <img
+                                    key={imgIndex}
+                                    src={imageUrl}
+                                    alt={`Imagen de envío ${imgIndex + 1}`}
+                                    className="w-full  object-contain rounded-lg"
+                                  />
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          
                           <div className="mt-4 pt-3 border-t border-gray-200">
                             <div className="flex items-center justify-between text-xs text-gray-500">
                               <span>ID: {info.id.substring(0, 8)}...</span>
@@ -834,10 +852,43 @@ export default function OrderDetailsModal({
                         placeholder="Notas adicionales sobre el envío"
                       />
                     </div>
+                    
+                    <div className="mt-4">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Imágenes (máximo 2 archivos)
+                      </label>
+                      <input
+                        type="file"
+                        multiple
+                        accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
+                        onChange={(e) => {
+                          const files = Array.from(e.target.files || []);
+                          if (files.length > 2) {
+                            alert('Máximo 2 archivos permitidos');
+                            return;
+                          }
+                          setSelectedFiles(files);
+                        }}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#4a5a3f] focus:border-transparent"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">
+                        Tipos permitidos: JPG, PNG, GIF, WEBP. Máximo 5MB por archivo.
+                      </p>
+                      {selectedFiles.length > 0 && (
+                        <div className="mt-2">
+                          <p className="text-sm text-gray-600">Archivos seleccionados:</p>
+                          <ul className="text-xs text-gray-500">
+                            {selectedFiles.map((file, index) => (
+                              <li key={index}>• {file.name} ({(file.size / 1024 / 1024).toFixed(2)} MB)</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </div>
                     <button
                       onClick={async () => {
                         if (trackingData.tracking_number && trackingData.carrier) {
-                          await onAddShipping(order.id, trackingData);
+                          await onAddShipping(order.id, trackingData, selectedFiles);
                           setTrackingData({
                             tracking_number: "",
                             carrier: "",
@@ -845,6 +896,7 @@ export default function OrderDetailsModal({
                             estimated_delivery: "",
                             notes: ""
                           });
+                          setSelectedFiles([]);
                           // Actualizar solo los datos del modal
                           fetchOrderDetails(true);
                         }
