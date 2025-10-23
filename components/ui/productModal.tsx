@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Image from "next/image"
 import { useUIStore } from "@/store/uiStore"
 import { useCartStore } from "@/store/cartStore"
@@ -6,17 +6,25 @@ import { useProductUrl } from "@/hooks/useProductUrl"
 import { getCurrentPrice, getSavingsAmount, isDiscountActive, getDiscountPercentage, mapProductImages, getMainImage, getAllImages } from "@/components/types/Product"
 import { useWishlistStore } from "@/store/wishlistStore"
 import { useAuthContext } from "@/contexts/AuthContext"
+import SizeSelectionModal from "./SizeSelectionModal"
+import ConfirmModal from "./ConfirmModal"
 
 export default function ProductModal() {
     const { selectedProduct, selectedSize, currentImageIndex, setSelectedProduct, setSelectedSize, setCurrentImageIndex, openAuthModal } = useUIStore()
     const { addToCart, openCart } = useCartStore()
-    const { copyProductLink, closeProductAndClearUrl } = useProductUrl()
+    const { copyProductLink, closeProductAndClearUrl } = useProductUrl()    
+    const [isWishlistOperation, setIsWishlistOperation] = useState(false)
     const { isInWishlist, toggleWishlist, isLoading } = useWishlistStore()
     const { user } = useAuthContext()
     const [isProductModalClosing, setIsProductModalClosing] = useState(false)
     const [showAbout, setShowAbout] = useState(false)
     const [showDeliveryInfo, setShowDeliveryInfo] = useState(true)
     const [isCopyingLink, setIsCopyingLink] = useState(false)
+    const [showSizeModal, setShowSizeModal] = useState(false)
+    const [selectedProductForWishlist, setSelectedProductForWishlist] = useState(null)
+    const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false)
+    const [productToRemove, setProductToRemove] = useState<any>(null)
+    
     
     const handleAddToCart = () => {
         if (!selectedProduct || !selectedSize) return
@@ -45,7 +53,7 @@ export default function ProductModal() {
         }
     }
 
-    const handleWishlistToggle = async () => {
+    const handleWishlistToggle = () => {
         if (!selectedProduct) return
         
         if (!user) {
@@ -53,10 +61,38 @@ export default function ProductModal() {
             return
         }
 
-        await toggleWishlist(selectedProduct)
+        if (isInWishlist(selectedProduct.id)) {
+            setIsWishlistOperation(true)
+            setProductToRemove(selectedProduct)
+            setIsConfirmModalOpen(true)
+            return
+        }
+
+        setIsWishlistOperation(true)
+        setSelectedProductForWishlist(selectedProduct)
+        setShowSizeModal(true)
+    }
+
+    const handleConfirmRemove = async () => {
+        if (productToRemove) {
+            await toggleWishlist(productToRemove)
+        }
+        setIsConfirmModalOpen(false)
+        setProductToRemove(null)
+        setIsWishlistOperation(false)
+    }
+
+    const handleCancelRemove = () => {
+        setIsConfirmModalOpen(false)
+        setProductToRemove(null)
+        setIsWishlistOperation(false)
     }
 
     const closeProductModal = () => {
+        if (isWishlistOperation) {
+            return;
+        }
+        
         setIsProductModalClosing(true)
         closeProductAndClearUrl()
         setTimeout(() => {
@@ -358,6 +394,31 @@ export default function ProductModal() {
         </div>
       </div>
     </div>
+    
+    {/* Modales de Wishlist */}
+    <SizeSelectionModal
+      isOpen={showSizeModal}
+      onClose={() => {
+        setShowSizeModal(false);
+        setSelectedProductForWishlist(null);
+        setIsWishlistOperation(false);
+      }}
+      onSuccess={() => {
+        setIsWishlistOperation(false);
+      }}
+      product={selectedProductForWishlist}
+    />
+    
+    <ConfirmModal
+      isOpen={isConfirmModalOpen}
+      onClose={handleCancelRemove}
+      onConfirm={handleConfirmRemove}
+      title="Quitar de la Lista de Deseos"
+      message={`¿Estás seguro de que quieres quitar "${productToRemove?.name || 'este producto'}" de tu lista de deseos?`}
+      confirmText="Quitar"
+      cancelText="Cancelar"
+      isDestructive={true}
+    />
   </div>
   )
 }
