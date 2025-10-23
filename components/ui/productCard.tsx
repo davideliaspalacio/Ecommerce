@@ -1,9 +1,12 @@
+import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import ProductModal from "./productModal";
 import ProductFilters from "./ProductFilters";
 import { ProductSkeletonGrid } from "./ProductSkeleton";
 import FilterLoadingAnimation from "./FilterLoadingAnimation";
+import SizeSelectionModal from "./SizeSelectionModal";
+import ConfirmModal from "./ConfirmModal";
 import { useUIStore } from "@/store/uiStore";
 import { useProductsContext } from "@/contexts/ProductsContext";
 import { useFilteredProducts } from "@/hooks/useFilteredProducts";
@@ -19,14 +22,16 @@ export default function ProductsCards() {
   const { filteredProducts, isFiltering } = useFilteredProducts();
   const { isInWishlist, toggleWishlist, isLoading } = useWishlistStore();
   const { user } = useAuthContext();
+  
+  const [showSizeModal, setShowSizeModal] = useState(false);
+  const [selectedProductForWishlist, setSelectedProductForWishlist] = useState(null);
+  const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
+  const [productToRemove, setProductToRemove] = useState<any>(null);
 
-  // Debug: ver qué productos estamos recibiendo
-  console.log('Products en ProductsCards:', products)
-  console.log('Filtered products:', filteredProducts)
+ 
 
-  // Los productos ya vienen limitados desde la API (8 productos)
   const limitedProducts = filteredProducts;
-  const hasMoreProducts = filteredProducts.length === 8; // Si hay exactamente 8, probablemente hay más
+  const hasMoreProducts = filteredProducts.length === 8; 
 
   const handleProductClick = (product: any) => {
     setSelectedProduct(product);
@@ -34,15 +39,35 @@ export default function ProductsCards() {
     setCurrentImageIndex(0);
   };
 
-  const handleWishlistToggle = async (e: React.MouseEvent, product: any) => {
-    e.stopPropagation(); // Evitar que se abra el modal
+  const handleWishlistToggle = (e: React.MouseEvent, product: any) => {
+    e.stopPropagation();
     
     if (!user) {
       openAuthModal();
       return;
     }
 
-    await toggleWishlist(product);
+    if (isInWishlist(product.id)) {
+      setProductToRemove(product);
+      setIsConfirmModalOpen(true);
+      return;
+    }
+
+    setSelectedProductForWishlist(product);
+    setShowSizeModal(true);
+  };
+
+  const handleConfirmRemove = async () => {
+    if (productToRemove) {
+      await toggleWishlist(productToRemove);
+    }
+    setIsConfirmModalOpen(false);
+    setProductToRemove(null);
+  };
+
+  const handleCancelRemove = () => {
+    setIsConfirmModalOpen(false);
+    setProductToRemove(null);
   };
 
   return (
@@ -97,7 +122,6 @@ export default function ProductsCards() {
                         height={748}
                         className="w-full h-full object-cover transition-opacity duration-300 group-hover:opacity-0"
                       />
-                      {/* Hover image - show second image if available */}
                       {getAllImages(product).length > 1 && (
                         <Image
                           src={getAllImages(product)[1] || getMainImage(product) || "/placeholder.svg"}
@@ -109,7 +133,6 @@ export default function ProductsCards() {
                       )}
                     </div>
                     
-                    {/* Botón de Wishlist */}
                     <button
                       onClick={(e) => handleWishlistToggle(e, product)}
                       disabled={isLoading} 
@@ -187,7 +210,6 @@ export default function ProductsCards() {
             </div>
           )}
 
-          {/* Botón Ver Todos los Productos */}
           {!loading && !error && !isFiltering && hasMoreProducts && (
             <div className="flex justify-center mt-12">
               <Link
@@ -203,6 +225,25 @@ export default function ProductsCards() {
        {selectedProduct && (
         <ProductModal />
       )}
+      
+      <SizeSelectionModal
+        isOpen={showSizeModal}
+        onClose={() => {
+          setShowSizeModal(false);
+          setSelectedProductForWishlist(null);
+        }}
+        product={selectedProductForWishlist}
+      />
+      <ConfirmModal
+        isOpen={isConfirmModalOpen}
+        onClose={handleCancelRemove}
+        onConfirm={handleConfirmRemove}
+        title="Quitar de la Lista de Deseos"
+        message={`¿Estás seguro de que quieres quitar "${productToRemove?.name || 'este producto'}" de tu lista de deseos?`}
+        confirmText="Quitar"
+        cancelText="Cancelar"
+        isDestructive={true}
+      />
     </>
   );
 }

@@ -30,6 +30,7 @@ export interface WishlistWithProductType extends ProductType {
   created_by_email?: string;
   added_at: string;
   wishlist_updated_at: string;
+  size?: string; 
 }
 
 export interface SharedWishlistType {

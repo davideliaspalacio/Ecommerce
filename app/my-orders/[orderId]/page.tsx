@@ -161,7 +161,11 @@ export default function OrderDetailPage() {
         <Header />
         <div className="min-h-screen flex items-center justify-center bg-gray-50 pt-24">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#4a5a3f] mx-auto mb-4"></div>
+            <img 
+              src="/favicon.png" 
+              alt="ENOUGHH" 
+              className="w-12 h-12 animate-spin mx-auto mb-4"
+            />
             <p className="text-gray-600">Cargando detalles...</p>
           </div>
         </div>
@@ -388,7 +392,11 @@ export default function OrderDetailPage() {
                   >
                     {checking ? (
                       <>
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                        <img 
+                          src="/favicon.png" 
+                          alt="ENOUGHH" 
+                          className="w-4 h-4 animate-spin"
+                        />
                         Verificando...
                       </>
                     ) : (

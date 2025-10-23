@@ -10,6 +10,8 @@ import { useProductUrl } from "@/hooks/useProductUrl";
 import { getCurrentPrice, getSavingsAmount, isDiscountActive, getDiscountPercentage } from "@/components/types/Product";
 import { useWishlistStore } from "@/store/wishlistStore";
 import { useAuthContext } from "@/contexts/AuthContext";
+import SizeSelectionModal from "./SizeSelectionModal";
+import ConfirmModal from "./ConfirmModal";
 
 export default function AllProductsSection() {
   const { selectedProduct, setSelectedProduct, setSelectedSize, setCurrentImageIndex, openAuthModal } = useUIStore();
@@ -19,8 +21,11 @@ export default function AllProductsSection() {
   const { user } = useAuthContext();
   const observerRef = useRef<HTMLDivElement>(null);
   const [isVisible, setIsVisible] = useState(false);
+  const [isSizeModalOpen, setIsSizeModalOpen] = useState(false);
+  const [selectedProductForWishlist, setSelectedProductForWishlist] = useState<any>(null);
+  const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
+  const [productToRemove, setProductToRemove] = useState<any>(null);
 
-  // Función para cargar más productos cuando se hace scroll
   const handleObserver = useCallback((entries: IntersectionObserverEntry[]) => {
     const target = entries[0];
     if (target.isIntersecting && hasMore && !loading) {
@@ -28,7 +33,6 @@ export default function AllProductsSection() {
     }
   }, [hasMore, loading, loadMore]);
 
-  // Configurar el Intersection Observer
   useEffect(() => {
     const observer = new IntersectionObserver(handleObserver, {
       threshold: 0.1,
@@ -50,12 +54,10 @@ export default function AllProductsSection() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, []);
 
-  // Animación de entrada desde abajo hacia arriba
   useEffect(() => {
     const timer = setTimeout(() => {
       setIsVisible(true);
-    }, 100); // Pequeño delay para asegurar que el componente esté montado
-
+    }, 100); 
     return () => clearTimeout(timer);
   }, []);
 
@@ -66,14 +68,39 @@ export default function AllProductsSection() {
   };
 
   const handleWishlistToggle = async (e: React.MouseEvent, product: any) => {
-    e.stopPropagation(); // Evitar que se abra el modal
+    e.stopPropagation(); 
     
     if (!user) {
       openAuthModal();
       return;
     }
 
-    await toggleWishlist(product);
+    if (isInWishlist(product.id)) {
+      setProductToRemove(product);
+      setIsConfirmModalOpen(true);
+      return;
+    }
+
+    setSelectedProductForWishlist(product);
+    setIsSizeModalOpen(true);
+  };
+
+  const handleCloseSizeModal = () => {
+    setIsSizeModalOpen(false);
+    setSelectedProductForWishlist(null);
+  };
+
+  const handleConfirmRemove = async () => {
+    if (productToRemove) {
+      await toggleWishlist(productToRemove);
+    }
+    setIsConfirmModalOpen(false);
+    setProductToRemove(null);
+  };
+
+  const handleCancelRemove = () => {
+    setIsConfirmModalOpen(false);
+    setProductToRemove(null);
   };
 
   return (
@@ -147,7 +174,6 @@ export default function AllProductsSection() {
                         />
                       </div>
                       
-                      {/* Botón de Wishlist */}
                       <button
                         onClick={(e) => handleWishlistToggle(e, product)}
                         disabled={isLoading} 
@@ -175,7 +201,6 @@ export default function AllProductsSection() {
                       </button>
                     </div>
 
-                    {/* Product Info */}
                     <div className="flex flex-column justify-end items-center">
                       <span className="text-sm font-medium text-gray-700 mb-2">
                         {product.name}
@@ -224,7 +249,6 @@ export default function AllProductsSection() {
                 ))}
               </div>
 
-              {/* Elemento de observación para scroll infinito */}
               {hasMore && (
                 <div 
                   ref={observerRef} 
@@ -245,7 +269,6 @@ export default function AllProductsSection() {
                 </div>
               )}
 
-              {/* Mostrar mensaje cuando no hay más productos */}
               {!hasMore && products.length > 0 && (
                 <div className={`text-center mt-12 py-8 transition-all duration-1000 ease-out delay-600 ${
                   isVisible 
@@ -270,6 +293,25 @@ export default function AllProductsSection() {
       {selectedProduct && (
         <ProductModal />
       )}
+
+      {selectedProductForWishlist && (
+        <SizeSelectionModal
+          isOpen={isSizeModalOpen}
+          onClose={handleCloseSizeModal}
+          product={selectedProductForWishlist}
+        />
+      )}
+
+      <ConfirmModal
+        isOpen={isConfirmModalOpen}
+        onClose={handleCancelRemove}
+        onConfirm={handleConfirmRemove}
+        title="Quitar de la Lista de Deseos"
+        message={`¿Estás seguro de que quieres quitar "${productToRemove?.name || 'este producto'}" de tu lista de deseos?`}
+        confirmText="Quitar"
+        cancelText="Cancelar"
+        isDestructive={true}
+      />
     </>
   );
 }

@@ -10,8 +10,16 @@ import WhatAppButton from '@/components/ui/whatAppButton'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'ENOUGH®',
-  description: 'ENOUGH®',
+  title: 'ENOUGHH®',
+  description: 'ENOUGHH®',
+  icons: {
+    icon: [
+      { url: '/favicon.png', sizes: '32x32', type: 'image/png' },
+      { url: '/favicon.png', sizes: '64x64', type: 'image/png' },
+      { url: '/favicon.png', sizes: '128x128', type: 'image/png' },
+    ],
+    apple: '/favicon.png',
+  },
 }
 
 export default function RootLayout({

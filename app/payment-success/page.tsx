@@ -132,7 +132,11 @@ function PaymentSuccessContent() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 pt-16">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-[#4a5a3f] mx-auto mb-4"></div>
+          <img 
+            src="/favicon.png" 
+            alt="ENOUGHH" 
+            className="w-16 h-16 animate-spin mx-auto mb-4"
+          />
           <p className="text-gray-600">Verificando tu pago...</p>
         </div>
       </div>
@@ -321,7 +325,11 @@ export default function PaymentSuccessPage() {
       <Suspense fallback={
         <div className="min-h-screen flex items-center justify-center bg-gray-50 pt-16">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-[#4a5a3f] mx-auto mb-4"></div>
+            <img 
+            src="/favicon.png" 
+            alt="ENOUGHH" 
+            className="w-16 h-16 animate-spin mx-auto mb-4"
+          />
             <p className="text-gray-600">Cargando...</p>
           </div>
         </div>

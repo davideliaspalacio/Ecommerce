@@ -66,11 +66,12 @@ export default function Header() {
                 />
               </svg>
             </button>
-            <Link href="/" className="absolute left-1/2 -translate-x-1/2 group">
-              <h1 className="text-xl md:text-2xl font-bold tracking-wider text-gray-900 group-hover:text-[#4a5a3f] transition-colors duration-300">
-                ENOUGH
-              </h1>
-              <div className="absolute -bottom-1 left-0 w-0 h-0.5 bg-[#4a5a3f] transition-all duration-300 group-hover:w-full"></div>
+            <Link href="/" className="absolute left-1/2 -translate-x-1/2 group flex items-center gap-2">
+               <img src="/favicon.png" alt="ENOUGHH" className="w-8 h-8 md:w-10 md:h-10 animate-bounce" />
+               <h1 className="text-xl md:text-2xl font-bold tracking-wider text-gray-900 group-hover:text-[#4a5a3f] transition-colors duration-300">
+                 ENOUGHH
+               </h1>
+               <div className="absolute -bottom-1 left-0 w-0 h-0.5 bg-[#4a5a3f] transition-all duration-300 group-hover:w-full"></div>
             </Link>
             {/* Navegación Principal */}
             <nav className="hidden lg:flex items-center space-x-8">
@@ -262,7 +263,7 @@ export default function Header() {
                   <div className="space-y-1">
                     <Link
                       href="/"
-                      className={`flex items-center gap-3 px-3 py-2 hover:bg-gray-50 transition-colors rounded-lg font-medium ${
+                      className={`flex items-center gap-3 px-3 py-2 hover:bg-gray-50 transition-colors rounded-1xl font-medium ${
                         pathname === "/" 
                           ? "text-[#4a5a3f] bg-green-50" 
                           : "text-gray-700 hover:text-[#4a5a3f]"
@@ -277,7 +278,7 @@ export default function Header() {
                     
                     <Link
                       href="/products"
-                      className={`flex items-center gap-3 px-3 py-2 hover:bg-gray-50 transition-colors rounded-lg font-medium ${
+                      className={`flex items-center gap-3 px-3 py-2 hover:bg-gray-50 transition-colors rounded-1xl font-medium ${
                         pathname === "/products" 
                           ? "text-[#4a5a3f] bg-green-50" 
                           : "text-gray-700 hover:text-[#4a5a3f]"
@@ -292,7 +293,7 @@ export default function Header() {
                     
                     <Link
                       href="#"
-                      className="flex items-center gap-3 px-3 py-2 text-gray-700 hover:text-[#4a5a3f] hover:bg-gray-50 transition-colors rounded-lg font-medium"
+                      className="flex items-center gap-3 px-3 py-2 text-gray-700 hover:text-[#4a5a3f] hover:bg-gray-50 transition-colors rounded-1xl font-medium"
                       onClick={toggleMobileMenu}
                     >
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -303,7 +304,7 @@ export default function Header() {
                     
                     <Link
                       href="#"
-                      className="flex items-center gap-3 px-3 py-2 text-gray-700 hover:text-[#4a5a3f] hover:bg-gray-50 transition-colors rounded-lg font-medium"
+                      className="flex items-center gap-3 px-3 py-2 text-gray-700 hover:text-[#4a5a3f] hover:bg-gray-50 transition-colors rounded-1xl font-medium"
                       onClick={toggleMobileMenu}
                     >
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -314,14 +315,13 @@ export default function Header() {
                   </div>
                 </div>
 
-                {/* Sección de Usuario */}
                 {user && (
                   <div className="px-2 py-2 border-t border-gray-100">
                     <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Mi Cuenta</h3>
                     <div className="space-y-1">
                       <Link
                         href="/my-orders"
-                        className={`flex items-center gap-3 px-3 py-2 hover:bg-gray-50 transition-colors rounded-lg font-medium ${
+                        className={`flex items-center gap-3 px-3 py-2 hover:bg-gray-50 transition-colors rounded-1xl font-medium ${
                           pathname === "/my-orders" 
                             ? "text-[#4a5a3f] bg-green-50" 
                             : "text-gray-700 hover:text-[#4a5a3f]"
@@ -336,19 +336,18 @@ export default function Header() {
                     </div>
                   </div>
                 )}
-                {/* Acciones del Usuario */}
                 <div className="px-2 py-2 border-t border-gray-100">
                   <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Acciones</h3>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <button className="p-2 text-gray-700 hover:text-[#4a5a3f] hover:bg-gray-50 transition-colors rounded-lg">
+                      <button className="p-2 text-gray-700 hover:text-[#4a5a3f] hover:bg-gray-50 transition-colors rounded-1xl">
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                         </svg>
                       </button>
                       <button 
                         onClick={openWishlist}
-                        className="p-2 text-gray-700 hover:text-red-500 hover:bg-gray-50 transition-colors rounded-lg relative"
+                        className="p-2 text-gray-700 hover:text-red-500 hover:bg-gray-50 transition-colors rounded-1xl relative"
                       >
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
@@ -361,7 +360,7 @@ export default function Header() {
                       </button>
                       <button 
                         onClick={openCart}
-                        className="p-2 text-gray-700 hover:text-black hover:bg-gray-50 transition-colors rounded-lg relative"
+                        className="p-2 text-gray-700 hover:text-black hover:bg-gray-50 transition-colors rounded-1xl relative"
                       >
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
@@ -374,7 +373,6 @@ export default function Header() {
                       </button>
                     </div>
                     
-                    {/* Información del Usuario */}
                     {loading ? (
                       <div className="w-5 h-5 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin"></div>
                     ) : user ? (

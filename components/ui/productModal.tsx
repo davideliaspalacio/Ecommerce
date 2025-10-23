@@ -342,12 +342,12 @@ export default function ProductModal() {
                       <span className="font-semibold text-red-600"> treinta (30) días</span> desde la fecha de entrega de tu orden. 
                       En este plazo usted debe hacer llegar su solicitud de cambio en el siguiente correo:
                     </p>
-                    <div className="bg-gray-50 border border-gray-200 rounded-xl p-3">
+                    <div className="bg-gray-50 border border-gray-200 rounded-1xl p-3">
                       <a 
                         href="mailto:enough.dmd@gmail.com" 
                         className="text-[#4a5a3f] hover:text-[#3d4a34] font-medium transition-colors"
                       >
-                        enough.dmd@gmail.com
+                        enoughh@gmail.com
                       </a>
                     </div>
                   </div>

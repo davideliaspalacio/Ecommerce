@@ -14,7 +14,7 @@ interface WishlistStore {
   currentShareId: string | null;
 
   // Acciones de wishlist
-  addToWishlist: (product: ProductType) => Promise<boolean>;
+  addToWishlist: (product: ProductType, size?: string) => Promise<boolean>;
   removeFromWishlist: (productId: string) => Promise<boolean>;
   fetchWishlist: () => Promise<void>;
   clearWishlist: () => void;
@@ -33,7 +33,7 @@ interface WishlistStore {
   // Utilidades
   isInWishlist: (productId: string) => boolean;
   getWishlistCount: () => number;
-  toggleWishlist: (product: ProductType) => Promise<boolean>;
+  toggleWishlist: (product: ProductType, size?: string) => Promise<boolean>;
   getShareId: () => string | null;
 }
 
@@ -49,7 +49,7 @@ export const useWishlistStore = create<WishlistStore>()(
       currentShareId: null,
 
       // Agregar a wishlist
-      addToWishlist: async (product) => {
+      addToWishlist: async (product, size) => {
         try {
           set({ isLoading: true, error: null });
 
@@ -58,7 +58,7 @@ export const useWishlistStore = create<WishlistStore>()(
             return false;
           }
 
-          const response = await apiClient.addToWishlist(product.id);
+          const response = await apiClient.addToWishlist(product.id, size);
 
           if (!response.success) {
             set({ error: response.error || 'Error al agregar a favoritos' });
@@ -163,13 +163,13 @@ export const useWishlistStore = create<WishlistStore>()(
       },
 
       // Toggle wishlist (agregar/remover)
-      toggleWishlist: async (product) => {
+      toggleWishlist: async (product, size) => {
         const isInWishlist = get().isInWishlist(product.id);
         
         if (isInWishlist) {
           return await get().removeFromWishlist(product.id);
         } else {
-          return await get().addToWishlist(product);
+          return await get().addToWishlist(product, size);
         }
       },
 

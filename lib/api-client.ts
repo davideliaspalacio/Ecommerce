@@ -455,10 +455,13 @@ class ApiClient {
     return this.request('/wishlist')
   }
 
-  async addToWishlist(productId: string) {
+  async addToWishlist(productId: string, size?: string) {
     return this.request('/wishlist/products', {
       method: 'POST',
-      body: JSON.stringify({ product_id: productId }),
+      body: JSON.stringify({ 
+        product_id: productId,
+        size: size || null
+      }),
     })
   }
 
