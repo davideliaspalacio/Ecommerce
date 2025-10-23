@@ -56,8 +56,9 @@ export default function WishlistModal() {
     closeWishlist();
   };
 
-  const handleAddToCart = (product: any, size: string) => {
-    addToCart(product, size);
+  const handleAddToCart = (product: any, size?: string) => {
+    const selectedSize = (product as any).size || size || (product.sizes && product.sizes[0]) || 'M';
+    addToCart(product, selectedSize);
     setAddedProductName(product.name);
     setShowSuccessMessage(true);
     
@@ -122,7 +123,7 @@ export default function WishlistModal() {
       {/* Notificación de éxito */}
       {showSuccessMessage && (
         <div className="fixed top-4 right-4 z-[200] animate-slide-in-right">
-          <div className="bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg flex items-center gap-3">
+          <div className="bg-green-500 text-white px-6 py-3 rounded-1xl shadow-lg flex items-center gap-3">
             <svg
               className="w-5 h-5"
               fill="none"
@@ -228,7 +229,13 @@ export default function WishlistModal() {
             </div>
           ) : isLoading ? (
             <div className="flex flex-col items-center justify-center h-full text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#4a5a3f] mb-4"></div>
+              <div className="mb-4">
+                <img 
+                  src="/favicon.png" 
+                  alt="ENOUGHH" 
+                  className="w-16 h-16 animate-spin"
+                />
+              </div>
               <p className="text-gray-500">Cargando favoritos...</p>
             </div>
           ) : error ? (
@@ -299,6 +306,14 @@ export default function WishlistModal() {
                       {item.name}
                     </h3>
                     
+                    {(item as any).size && (
+                      <div className="mb-2">
+                        <span className="inline-block px-2 py-1 bg-[#4a5a3f] text-white text-xs font-medium rounded-1xl">
+                          Talla: {(item as any).size}
+                        </span>
+                      </div>
+                    )}
+                    
                     <div className="flex flex-col mb-2">
                       {isDiscountActive(item) ? (
                         <>
@@ -326,8 +341,8 @@ export default function WishlistModal() {
 
                     <div className="flex items-center gap-2">
                       <button
-                        onClick={() => handleAddToCart(item, item.sizes[0])}
-                        className="px-3 py-1 bg-[#4a5a3f] text-white text-xs font-medium rounded hover:bg-[#3d4a34] transition-colors cursor-pointer"
+                        onClick={() => handleAddToCart(item)}
+                        className="px-3 py-1 bg-[#4a5a3f]  text-white text-xs font-medium rounded-1xl hover:bg-[#3d4a34] transition-colors cursor-pointer"
                       >
                         Agregar al carrito
                       </button>
@@ -362,7 +377,11 @@ export default function WishlistModal() {
               >
                 {isSharing ? (
                   <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    <img 
+                      src="/favicon.png" 
+                      alt="ENOUGHH" 
+                      className="w-4 h-4 animate-spin"
+                    />
                     <span>Compartiendo...</span>
                   </>
                 ) : (

@@ -261,7 +261,11 @@ export default function OrderDetailsModal({
         <div className="p-6 overflow-y-auto max-h-[60vh]">
           {loading ? (
             <div className="flex items-center justify-center py-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#4a5a3f]"></div>
+              <img 
+                src="/favicon.png" 
+                alt="ENOUGHH" 
+                className="w-8 h-8 animate-spin"
+              />
             </div>
           ) : (
             <>

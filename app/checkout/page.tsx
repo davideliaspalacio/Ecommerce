@@ -720,7 +720,11 @@ export default function CheckoutPage() {
                 >
                   {isProcessing ? (
                     <>
-                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2" />
+                      <img 
+                        src="/favicon.png" 
+                        alt="ENOUGHH" 
+                        className="w-5 h-5 animate-spin mr-2"
+                      />
                       Procesando...
                     </>
                   ) : (

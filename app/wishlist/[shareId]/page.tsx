@@ -92,7 +92,11 @@ export default function SharedWishlistPage() {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#4a5a3f] mx-auto mb-4"></div>
+          <img 
+            src="/favicon.png" 
+            alt="ENOUGHH" 
+            className="w-12 h-12 animate-spin mx-auto mb-4"
+          />
           <p className="text-gray-600">Cargando wishlist...</p>
         </div>
       </div>
@@ -200,7 +204,7 @@ export default function SharedWishlistPage() {
             {sharedWishlist.products.map((product, index) => (
               <div
                 key={product.id}
-                className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow"
+                className="bg-white rounded-1xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow"
               >
                 <div 
                   className="relative aspect-square cursor-pointer"
@@ -292,7 +296,7 @@ export default function SharedWishlistPage() {
       </div>
       {showPurchaseModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-md w-full max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-1xl max-w-md w-full max-h-[90vh] overflow-y-auto">
             <div className="p-4 sm:p-6">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg sm:text-xl font-bold text-gray-900 pr-2">
@@ -309,7 +313,7 @@ export default function SharedWishlistPage() {
               </div>
 
               <div className="space-y-4">
-                <div className="bg-gray-50 p-3 sm:p-4 rounded-lg">
+                <div className="bg-gray-50 p-3 sm:p-4 rounded-1xl">
                   <h4 className="font-medium text-gray-900 mb-2 text-sm sm:text-base">Resumen de la compra:</h4>
                   <div className="space-y-2">
                     <div className="flex justify-between text-xs sm:text-sm">
@@ -333,7 +337,7 @@ export default function SharedWishlistPage() {
                   </div>
                 </div>
 
-                <div className="bg-blue-50 p-3 sm:p-4 rounded-lg">
+                <div className="bg-blue-50 p-3 sm:p-4 rounded-1xl">
                   <div className="flex items-start">
                     <svg className="w-4 h-4 sm:w-5 sm:h-5 text-blue-500 mt-0.5 mr-2 sm:mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -348,7 +352,7 @@ export default function SharedWishlistPage() {
                 <div className="flex flex-col sm:flex-row gap-3 pt-4">
                   <button
                     onClick={() => setShowPurchaseModal(false)}
-                    className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm sm:text-base"
+                    className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-1xl hover:bg-gray-50 transition-colors text-sm sm:text-base"
                     disabled={isPurchasing}
                   >
                     Cancelar
@@ -356,7 +360,7 @@ export default function SharedWishlistPage() {
                   <button
                     onClick={handleConfirmPurchase}
                     disabled={isPurchasing}
-                    className="flex-1 px-4 py-2 bg-[#4a5a3f] text-white rounded-lg hover:bg-[#3d4a34] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center text-sm sm:text-base"
+                    className="flex-1 px-4 py-2 bg-[#4a5a3f] text-white rounded-1xl hover:bg-[#3d4a34] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center text-sm sm:text-base"
                   >
                     {isPurchasing ? (
                       <>
@@ -380,7 +384,7 @@ export default function SharedWishlistPage() {
       {/* Modal de Éxito */}
       {purchaseSuccess && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-md w-full">
+          <div className="bg-white rounded-1xl max-w-md w-full">
             <div className="p-4 sm:p-6 text-center">
               <div className="w-12 h-12 sm:w-16 sm:h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <svg className="w-6 h-6 sm:w-8 sm:h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -396,13 +400,13 @@ export default function SharedWishlistPage() {
               <div className="flex flex-col sm:flex-row gap-3">
                 <button
                   onClick={() => setPurchaseSuccess(false)}
-                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm sm:text-base"
+                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-1xl hover:bg-gray-50 transition-colors text-sm sm:text-base"
                 >
                   Cerrar
                 </button>
                 <a
                   href="/"
-                  className="flex-1 px-4 py-2 bg-[#4a5a3f] text-white rounded-lg hover:bg-[#3d4a34] transition-colors text-center text-sm sm:text-base"
+                  className="flex-1 px-4 py-2 bg-[#4a5a3f] text-white rounded-1xl hover:bg-[#3d4a34] transition-colors text-center text-sm sm:text-base"
                 >
                   Ir al Carrito
                 </a>
