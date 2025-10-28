@@ -9,7 +9,10 @@ import { useCartStore } from "@/store/cartStore";
 import { useWishlistStore } from "@/store/wishlistStore";
 import { useUIStore } from "@/store/uiStore";
 import { useAuthContext } from "@/contexts/AuthContext";
+import { usePendingOrder } from "@/hooks/usePendingOrder";
+import PendingOrderModal from "./PendingOrderModal";
 import { useState, useEffect } from "react";
+import { Clock, AlertTriangle } from "lucide-react";
 
 export default function Header() {
   const pathname = usePathname();
@@ -20,9 +23,21 @@ export default function Header() {
     toggleMobileMenu, 
     isAuthModalOpen, 
     openAuthModal, 
-    closeAuthModal 
+    closeAuthModal,
+    isPendingOrderModalOpen,
+    openPendingOrderModal,
+    closePendingOrderModal
   } = useUIStore();
   const { user, profile, signOut, loading } = useAuthContext();
+  const { 
+    pendingOrder, 
+    timeRemaining, 
+    isExpired, 
+    isLoading: pendingOrderLoading,
+    checkPendingOrder,
+    cancelPendingOrder,
+    clearError
+  } = usePendingOrder();
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
 
@@ -38,6 +53,59 @@ export default function Header() {
     await signOut();
     setIsConfirmModalOpen(false);
   };
+
+  // Handlers for pending order
+  const handleContinueOrder = () => {
+    // Close the modal first
+    closePendingOrderModal();
+    // Redirect to checkout page with payment step
+    window.location.href = '/checkout?step=payment';
+  };
+
+  const handleCancelOrder = async () => {
+    const success = await cancelPendingOrder();
+    if (success) {
+      closePendingOrderModal();
+    }
+  };
+
+  // Format time remaining
+  const formatTime = (milliseconds: number) => {
+    const totalSeconds = Math.floor(milliseconds / 1000);
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+  };
+
+  // Show pending order modal when there's a pending order (but NOT on checkout page)
+  useEffect(() => {
+    const isCheckoutPage = window.location.pathname === '/checkout';
+    
+    // NUNCA mostrar modal en checkout - siempre cerrarlo
+    if (isCheckoutPage) {
+      if (isPendingOrderModalOpen) {
+        closePendingOrderModal();
+      }
+      return;
+    }
+    
+    // Solo mostrar modal en otras páginas
+    if (pendingOrder && !isExpired && !isPendingOrderModalOpen) {
+      openPendingOrderModal();
+    }
+  }, [pendingOrder, isExpired, isPendingOrderModalOpen, openPendingOrderModal, closePendingOrderModal]);
+
+  // Listen for custom event to close modal
+  useEffect(() => {
+    const handleCloseModal = () => {
+      closePendingOrderModal();
+    };
+
+    window.addEventListener('closePendingOrderModal', handleCloseModal);
+    return () => {
+      window.removeEventListener('closePendingOrderModal', handleCloseModal);
+    };
+  }, [closePendingOrderModal]);
   return (
     <>
       <header className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md border-b border-gray-200 shadow-sm">
@@ -252,6 +320,22 @@ export default function Header() {
                   </span>
                 )}
               </button>
+
+              {/* Pending Order Indicator */}
+              {isMounted && pendingOrder && !isExpired && (
+                <button
+                  onClick={openPendingOrderModal}
+                  className="text-orange-600 hover:text-orange-700 transition-all duration-300 hover:scale-110 relative cursor-pointer"
+                  title="Tienes una orden pendiente"
+                >
+                  <Clock className="w-5 h-5" />
+                  {timeRemaining && (
+                    <span className="absolute -top-2 -right-2 bg-orange-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-medium animate-pulse">
+                      {formatTime(timeRemaining).split(':')[0]}
+                    </span>
+                  )}
+                </button>
+              )}
             </div>
           </div>
           {isMobileMenuOpen && (
@@ -371,6 +455,25 @@ export default function Header() {
                           </span>
                         )}
                       </button>
+
+                      {/* Pending Order Indicator - Mobile */}
+                      {isMounted && pendingOrder && !isExpired && (
+                        <button 
+                          onClick={() => {
+                            openPendingOrderModal();
+                            toggleMobileMenu();
+                          }}
+                          className="p-2 text-orange-600 hover:text-orange-700 hover:bg-orange-50 transition-colors rounded-1xl relative"
+                          title="Tienes una orden pendiente"
+                        >
+                          <Clock className="w-5 h-5" />
+                          {timeRemaining && (
+                            <span className="absolute -top-1 -right-1 bg-orange-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center font-medium animate-pulse">
+                              {formatTime(timeRemaining).split(':')[0]}
+                            </span>
+                          )}
+                        </button>
+                      )}
                     </div>
                     
                     {loading ? (
@@ -429,6 +532,16 @@ export default function Header() {
         onClose={closeAuthModal}
       />
       <WishlistModal />
+      <PendingOrderModal
+        isOpen={isPendingOrderModalOpen}
+        onClose={closePendingOrderModal}
+        onCancelOrder={handleCancelOrder}
+        onContinueOrder={handleContinueOrder}
+        pendingOrder={pendingOrder}
+        timeRemaining={timeRemaining}
+        isExpired={isExpired}
+        isLoading={pendingOrderLoading}
+      />
       <ConfirmModal
         isOpen={isConfirmModalOpen}
         onClose={() => setIsConfirmModalOpen(false)}

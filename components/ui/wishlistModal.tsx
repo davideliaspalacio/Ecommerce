@@ -58,7 +58,12 @@ export default function WishlistModal() {
 
   const handleAddToCart = (product: any, size?: string) => {
     const selectedSize = (product as any).size || size || (product.sizes && product.sizes[0]) || 'M';
-    addToCart(product, selectedSize);
+    
+    const selectedVariant = product.variants?.find(
+      (variant: any) => variant.variant_value === selectedSize
+    );
+    
+    addToCart(product, selectedVariant?.id);
     setAddedProductName(product.name);
     setShowSuccessMessage(true);
     

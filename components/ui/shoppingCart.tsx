@@ -2,6 +2,7 @@ import { useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import AuthModal from "./authModal";
+import CartLoadingSpinner from "./CartLoadingSpinner";
 import { useCartStore } from "@/store/cartStore";
 import { useUIStore } from "@/store/uiStore";
 import { useAuthContext } from "@/contexts/AuthContext";
@@ -19,6 +20,8 @@ export default function ShoppingCart() {
     getItemPrice,
     backendTotal,
     backendSavings,
+    isLoading,
+    loadingItemId,
   } = useCartStore();
   const {
     isAuthModalOpen,
@@ -119,6 +122,13 @@ export default function ShoppingCart() {
                   Agrega productos para comenzar tu compra
                 </p>
               </div>
+            ) : isLoading ? (
+              <div className="flex flex-col items-center justify-center h-full text-center">
+                <CartLoadingSpinner size="lg" />
+                <p className="text-gray-500 text-lg mt-4">
+                  Actualizando carrito...
+                </p>
+              </div>
             ) : (
               <div className="space-y-4">
                 {cart.map((item, index) => {
@@ -130,7 +140,7 @@ export default function ShoppingCart() {
                   
                   return (
                     <div
-                      key={`${item.product.id}-${item.size}-${index}`}
+                      key={`${item.product.id}-${item.variant_id}-${index}`}
                       className="flex gap-4 pb-4 border-b animate-fade-in-up"
                       style={{ animationDelay: `${index * 0.1}s` }}
                     >
@@ -178,14 +188,17 @@ export default function ShoppingCart() {
                       <div className="flex items-center gap-3 mt-2">
                         <div className="flex items-center border border-gray-300 rounded">
                           <button
-                            onClick={() =>
-                              updateQuantity(
-                                item.product.id,
-                                item.size,
-                                item.quantity - 1
-                              )
-                            }
-                            className="px-3 py-1 hover:bg-gray-100 transition-colors cursor-pointer"
+                            onClick={() => {
+                              if (item.variant_id) {
+                                updateQuantity(
+                                  item.product.id,
+                                  item.variant_id,
+                                  item.quantity - 1
+                                );
+                              }
+                            }}
+                            disabled={isLoading && loadingItemId === `${item.product.id}-${item.variant_id}`}
+                            className="px-3 py-1 hover:bg-gray-100 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                           >
                             -
                           </button>
@@ -193,24 +206,30 @@ export default function ShoppingCart() {
                             {item.quantity}
                           </span>
                           <button
-                            onClick={() =>
-                              updateQuantity(
-                                item.product.id,
-                                item.size,
-                                item.quantity + 1
-                              )
-                            }
-                            className="px-3 py-1 hover:bg-gray-100 transition-colors cursor-pointer"
+                            onClick={() => {
+                              if (item.variant_id) {
+                                updateQuantity(
+                                  item.product.id,
+                                  item.variant_id,
+                                  item.quantity + 1
+                                );
+                              }
+                            }}
+                            disabled={isLoading && loadingItemId === `${item.product.id}-${item.variant_id}`}
+                            className="px-3 py-1 hover:bg-gray-100 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                           >
                             +
                           </button>
                         </div>
-
+                        
                         <button
-                          onClick={() =>
-                            removeFromCart(item.product.id, item.size)
-                          }
-                          className="text-sm text-red-600 hover:text-red-700 transition-colors cursor-pointer"
+                          onClick={() => {
+                            if (item.variant_id) {
+                              removeFromCart(item.product.id, item.variant_id);
+                            }
+                          }}
+                          disabled={isLoading && loadingItemId === `${item.product.id}-${item.variant_id}`}
+                          className="text-sm text-red-600 hover:text-red-700 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           Eliminar
                         </button>

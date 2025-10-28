@@ -5,30 +5,25 @@ import { ProductType, getCurrentPrice } from '@/components/types/Product';
 import { apiClient } from '@/lib/api-client';
 
 interface CartStore {
-  // Estado
   cart: CartItemType[];
   isCartOpen: boolean;
   showCartAnimation: boolean;
   backendTotal: number;
   backendSavings: number;
-
-  // Acciones del carrito
-  addToCart: (product: ProductType, size: string) => Promise<void>;
-  removeFromCart: (productId: string, size: string) => Promise<void>;
-  removeFromCartByProductId: (productId: string, size: string) => Promise<void>;
-  updateQuantity: (productId: string, size: string, quantity: number) => Promise<void>;
+  isLoading: boolean;
+  loadingItemId: string | null;
+  addToCart: (product: ProductType, variantId: string) => Promise<void>;
+  removeFromCart: (productId: string, variantId: string) => Promise<void>;
+  removeFromCartByProductId: (productId: string, variantId: string) => Promise<void>;
+  updateQuantity: (productId: string, variantId: string, quantity: number) => Promise<void>;
   clearCart: () => Promise<void>;
   loadCartFromDB: () => Promise<void>;
-
-  // Acciones de UI
   openCart: () => void;
   closeCart: () => void;
   setShowCartAnimation: (show: boolean) => void;
-
-  // Utilidades
   getTotal: () => number;
   getItemCount: () => number;
-  isInCart: (productId: string, size: string) => boolean;
+  isInCart: (productId: string, variantId: string) => boolean;
   getItemPrice: (product: ProductType) => number;
 }
 
@@ -41,6 +36,8 @@ export const useCartStore = create<CartStore>()(
       showCartAnimation: false,
       backendTotal: 0,
       backendSavings: 0,
+      isLoading: false,
+      loadingItemId: null,
 
       // Cargar carrito desde la base de datos
       loadCartFromDB: async () => {
@@ -55,45 +52,47 @@ export const useCartStore = create<CartStore>()(
             const backendSavings = response.data?.savings || 0;
             
             // Transformar la estructura plana a la estructura esperada
-            const transformedCart = (response.data?.items || []).map((item: any) => ({
-              id: item.id,
-              product: {
-                id: item.product_id,
-                name: item.product_name,
+            const transformedCart = (response.data?.items || []).map((item: any) => {             
+              return {
+                id: item.id,
+                product: {
+                  id: item.product_id,
+                  name: item.product_name,
+                  price: item.price,
+                  image: item.image_url,
+                  original_price: item.original_price || null,
+                  discount_percentage: item.discount_percentage || null,
+                  is_on_discount: item.is_on_discount || false,
+                  discount_start_date: item.discount_start_date || null,
+                  discount_end_date: item.discount_end_date || null,
+                  current_price: item.current_price || item.price,
+                  savings_amount: item.savings_amount || 0,
+                  discount_active: item.discount_active || false,
+                  image_back: item.image_back || null,
+                  description: item.description || '',
+                  category: item.category || '',
+                  gender: item.gender || '',
+                  sizes: item.sizes || [],
+                  stock_quantity: item.stock_quantity || 0,
+                  status: item.status || 'active',
+                  specifications: item.specifications || [],
+                  tags: item.tags || [],
+                  variants: item.variants || [], 
+                  created_at: item.created_at || null,
+                  updated_at: item.updated_at || null,
+                },
                 price: item.price,
-                image: item.image_url,
-                // Agregar campos por defecto para compatibilidad
-                original_price: item.original_price || null,
-                discount_percentage: item.discount_percentage || null,
-                is_on_discount: item.is_on_discount || false,
-                discount_start_date: item.discount_start_date || null,
-                discount_end_date: item.discount_end_date || null,
-                current_price: item.current_price || item.price,
-                savings_amount: item.savings_amount || 0,
-                discount_active: item.discount_active || false,
-                image_back: item.image_back || null,
-                description: item.description || '',
-                category: item.category || '',
-                gender: item.gender || '',
-                sizes: item.sizes || [],
-                stock_quantity: item.stock_quantity || 0,
-                status: item.status || 'active',
-                specifications: item.specifications || [],
-                tags: item.tags || [],
-                created_at: item.created_at || null,
-                updated_at: item.updated_at || null,
-              },
-              // Campos de promoción del backend
-              price: item.price,
-              original_price: item.original_price,
-              discount_percentage: item.discount_percentage,
-              is_on_discount: item.is_on_discount,
-              final_price: item.final_price,
-              size: item.size,
-              quantity: item.quantity,
-              created_at: item.created_at,
-              updated_at: item.updated_at,
-            }));
+                original_price: item.original_price,
+                discount_percentage: item.discount_percentage,
+                is_on_discount: item.is_on_discount,
+                final_price: item.final_price,
+                size: item.size,
+                variant_id: item.variant_id, 
+                quantity: item.quantity,
+                created_at: item.created_at,
+                updated_at: item.updated_at,
+              };
+            });
             
             set({ 
               cart: transformedCart,
@@ -107,203 +106,111 @@ export const useCartStore = create<CartStore>()(
       },
 
       // Agregar al carrito
-      addToCart: async (product, size) => {
-        // Verificar si el usuario está logueado PRIMERO
+      addToCart: async (product, variantId) => {
         if (!apiClient.isAuthenticated()) {
-          // Solo abrir modal de login, NO hacer nada más
           const { useUIStore } = await import('./uiStore');
           useUIStore.getState().openAuthModal();
-          return; // Salir inmediatamente, no ejecutar el resto
+          return;
         }
 
-        // Solo ejecutar si el usuario está logueado
-        const { cart } = get();
-        const existingItem = cart.find(
-          item => item.product.id === product.id && item.size === size
-        );
-
-        // Actualizar localmente primero
-        const newCart = [...cart];
-        const existingItemIndex = newCart.findIndex(
-          item => item.product.id === product.id && item.size === size
-        );
-
-        if (existingItemIndex !== -1) {
-          // Si ya existe, incrementar cantidad y asegurar campos de precio
-          const currentPrice = getCurrentPrice(product);
-          newCart[existingItemIndex] = {
-            ...newCart[existingItemIndex],
-            quantity: newCart[existingItemIndex].quantity + 1,
-            price: currentPrice,
-            final_price: currentPrice,
-            original_price: product.original_price || currentPrice,
-            discount_percentage: product.discount_percentage || 0,
-            is_on_discount: product.is_on_discount || false
-          };
-        } else {
-          // Si no existe, agregar nuevo item con campos de precio calculados
-          const currentPrice = getCurrentPrice(product);
-          newCart.push({ 
-            product, 
-            size, 
-            quantity: 1,
-            price: currentPrice,
-            final_price: currentPrice,
-            original_price: product.original_price || currentPrice,
-            discount_percentage: product.discount_percentage || 0,
-            is_on_discount: product.is_on_discount || false
-          });
+        if (product.variants && product.variants.length > 0 && !variantId) {
+          alert('Error: Este producto requiere seleccionar una talla. Por favor selecciona una talla e intenta nuevamente.');
+          return;
         }
 
-        set({
-          cart: newCart,
-          showCartAnimation: true
-        });
+        set({ showCartAnimation: true });
 
-        // Guardar en la base de datos
-        try {
-          const response = await apiClient.addToCart(product.id, 1, size);
-
-          if (response.success) {
-            await get().loadCartFromDB();
-          }
-        } catch (error) {
-          console.error('Error saving to database:', error);
+        const response = await apiClient.addToCart(product.id, 1, variantId);
+        
+        if (response.success) {
+          await get().loadCartFromDB();
         }
 
-        // Resetear animación después de un tiempo
         setTimeout(() => {
           set({ showCartAnimation: false });
         }, 1000);
       },
 
       // Remover del carrito
-      removeFromCart: async (productId, size) => {
-        const { cart } = get();
-        
-        // Buscar el item en el carrito para obtener su ID ANTES de eliminarlo
-        const cartItem = cart.find(
-          item => item.product.id === productId && item.size === size
+      removeFromCart: async (productId, variantId) => {
+        const cartItem = get().cart.find(
+          item => item.product.id === productId && item.variant_id === variantId
         );
 
-        console.log('Removing cart item:', { productId, size, cartItem });
+        // Activar loading para este item específico
+        set({ 
+          isLoading: true, 
+          loadingItemId: `${productId}-${variantId}` 
+        });
 
-        // Eliminar de la base de datos PRIMERO
         try {
-          if (cartItem?.id) {
-            console.log('Removing cart item from database by ID:', cartItem.id);
-            
-            const response = await apiClient.removeFromCart(cartItem.id);
-
+          if (cartItem?.size) {
+            const response = await apiClient.removeFromCart(productId, cartItem.size);
             if (response.success) {
-              // Solo actualizar localmente si la eliminación en BD fue exitosa
-              set({
-                cart: cart.filter(
-                  item => !(item.product.id === productId && item.size === size)
-                )
-              });
-            } else {
-              console.error('Failed to remove from database by ID:', response.error);
-              // Intentar con product_id y size como fallback
-              await get().removeFromCartByProductId(productId, size);
+              await get().loadCartFromDB();
             }
           } else {
-            console.log('Cart item has no ID, removing by product_id and size:', { productId, size });
-            // Si no hay ID, usar product_id y size
-            await get().removeFromCartByProductId(productId, size);
+            await get().removeFromCartByProductId(productId, variantId);
           }
-        } catch (error) {
-          console.error('Error removing from database:', error);
-          // En caso de error, intentar con product_id y size
-          await get().removeFromCartByProductId(productId, size);
-        }
-      },
-
-      // Remover del carrito por product_id y size
-      removeFromCartByProductId: async (productId: string, size: string) => {
-        try {
-          console.log('Removing cart item by product_id and size:', { productId, size });
-          
-          const response = await apiClient.removeFromCartByProduct(productId, size);
-
-          if (response.success) {
-            // Actualizar localmente si la eliminación en BD fue exitosa
-            set({
-              cart: get().cart.filter(
-                item => !(item.product.id === productId && item.size === size)
-              )
-            });
-          } else {
-            console.error('Failed to remove from database by product_id and size:', response.error);
-            // En caso de error, actualizar localmente de todas formas
-            set({
-              cart: get().cart.filter(
-                item => !(item.product.id === productId && item.size === size)
-              )
-            });
-          }
-        } catch (error) {
-          console.error('Error removing from database by product_id and size:', error);
-          // En caso de error, actualizar localmente de todas formas
-          set({
-            cart: get().cart.filter(
-              item => !(item.product.id === productId && item.size === size)
-            )
+        } finally {
+          // Desactivar loading
+          set({ 
+            isLoading: false, 
+            loadingItemId: null 
           });
         }
       },
 
+      // Remover del carrito por product_id y variantId
+      removeFromCartByProductId: async (productId: string, variantId: string) => {
+        const response = await apiClient.removeFromCartByProduct(productId, variantId);
+        if (response.success) {
+          await get().loadCartFromDB();
+        }
+      },
+
       // Actualizar cantidad
-      updateQuantity: async (productId, size, quantity) => {
+      updateQuantity: async (productId, variantId, quantity) => {
         if (quantity < 1) {
-          await get().removeFromCart(productId, size);
+          await get().removeFromCart(productId, variantId);
           return;
         }
 
-        // Actualizar localmente primero
-        set({
-          cart: get().cart.map(item =>
-            item.product.id === productId && item.size === size
-              ? { ...item, quantity }
-              : item
-          )
+        const cartItem = get().cart.find(
+          item => item.product.id === productId && item.variant_id === variantId
+        );
+        
+        if (!cartItem?.size) {
+          console.error('No cart item size found');
+          return;
+        }
+
+        // Activar loading para este item específico
+        set({ 
+          isLoading: true, 
+          loadingItemId: `${productId}-${variantId}` 
         });
 
-        // Actualizar en la base de datos
         try {
-          // Buscar el item en el carrito para obtener su ID
-          const cartItem = get().cart.find(
-            item => item.product.id === productId && item.size === size
-          );
+          const response = await apiClient.updateCartItem(productId, cartItem.size, quantity);
           
-          if (cartItem?.id) {
-            const response = await apiClient.updateCartItem(cartItem.id, quantity);
-
-            // Si el PUT fue exitoso, recargar el carrito desde la BD para sincronizar
-            if (response.success) {
-              await get().loadCartFromDB();
-            }
+          if (response.success) {
+            await get().loadCartFromDB();
           }
-        } catch (error) {
-          console.error('Error updating quantity in database:', error);
+        } finally {
+          // Desactivar loading
+          set({ 
+            isLoading: false, 
+            loadingItemId: null 
+          });
         }
       },
 
       // Limpiar carrito
       clearCart: async () => {
-        // Limpiar localmente primero
-        set({ cart: [] });
-
-        // Limpiar en la base de datos
-        try {
-          const response = await apiClient.clearCart();
-
-          // Si el DELETE fue exitoso, recargar el carrito desde la BD para sincronizar
-          if (response.success) {
-            await get().loadCartFromDB();
-          }
-        } catch (error) {
-          console.error('Error clearing cart in database:', error);
+        const response = await apiClient.clearCart();
+        if (response.success) {
+          await get().loadCartFromDB();
         }
       },
 
@@ -338,9 +245,9 @@ export const useCartStore = create<CartStore>()(
       },
 
       // Verificar si está en el carrito
-      isInCart: (productId, size) => {
+      isInCart: (productId, variantId) => {
         return get().cart.some(
-          item => item.product.id === productId && item.size === size
+          item => item.product.id === productId && item.variant_id === variantId
         );
       },
 

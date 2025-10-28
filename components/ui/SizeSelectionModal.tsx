@@ -6,10 +6,11 @@ import { useUIStore } from "@/store/uiStore";
 interface SizeSelectionModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onSuccess?: () => void;
   product: any;
 }
 
-export default function SizeSelectionModal({ isOpen, onClose, product }: SizeSelectionModalProps) {
+export default function SizeSelectionModal({ isOpen, onClose, onSuccess, product }: SizeSelectionModalProps) {
   const [selectedSize, setSelectedSize] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const { toggleWishlist, isInWishlist } = useWishlistStore();
@@ -20,6 +21,10 @@ export default function SizeSelectionModal({ isOpen, onClose, product }: SizeSel
   const isProductInWishlist = product ? isInWishlist(product.id) : false;
 
   const getAvailableSizes = () => {
+    // Priorizar variantes sobre sizes
+    if (product?.variants && Array.isArray(product.variants)) {
+      return product.variants.map((variant: any) => variant.variant_value);
+    }
     if (product?.sizes && Array.isArray(product.sizes)) {
       return product.sizes;
     }
@@ -42,6 +47,7 @@ export default function SizeSelectionModal({ isOpen, onClose, product }: SizeSel
       setIsLoading(true);
       try {
         await toggleWishlist(product);
+        onSuccess?.();
         onClose();
       } catch (error) {
         console.error("Error removing from wishlist:", error);
@@ -56,9 +62,15 @@ export default function SizeSelectionModal({ isOpen, onClose, product }: SizeSel
       return;
     }
 
+    // Encontrar la variante correspondiente a la talla seleccionada
+    const selectedVariant = product?.variants?.find(
+      (variant: any) => variant.variant_value === selectedSize
+    );
+
     setIsLoading(true);
     try {
-      await toggleWishlist(product, selectedSize);
+      await toggleWishlist(product, selectedSize, selectedVariant?.id);
+      onSuccess?.();
       onClose();
     } catch (error) {
       console.error("Error adding to wishlist:", error);
@@ -70,7 +82,7 @@ export default function SizeSelectionModal({ isOpen, onClose, product }: SizeSel
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-[101] flex items-center justify-center p-4">
       <div 
         className="absolute inset-0 bg-black/50 animate-fade-in"
         onClick={onClose}

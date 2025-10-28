@@ -80,10 +80,15 @@ export function useProductUrl() {
     if (productId && productId !== loadedProductIdRef.current) {
       openProductFromUrl(productId)
     } else if (!productId && loadedProductIdRef.current) {
-      setSelectedProduct(null)
-      setSelectedSize('')
-      setCurrentImageIndex(0)
-      loadedProductIdRef.current = null
+
+      const timeoutId = setTimeout(() => {
+        setSelectedProduct(null)
+        setSelectedSize('')
+        setCurrentImageIndex(0)
+        loadedProductIdRef.current = null
+      }, 500) 
+      
+      return () => clearTimeout(timeoutId)
     }
   }, [searchParams])
 

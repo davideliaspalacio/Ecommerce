@@ -3,8 +3,9 @@ import { ProductType } from "./Product"
 export interface CartItemType {
     id?: string
     product: ProductType
-    size: string
+    size?: string // ← OPCIONAL: Para compatibilidad con productos sin variantes
     quantity: number
+    variant_id: string // ← REQUERIDO: ID de variante principal
     created_at?: string
     updated_at?: string
     // Campos de promoción del backend

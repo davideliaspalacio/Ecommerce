@@ -4,7 +4,7 @@ import { useState } from "react";
 import React from "react";
 import { useProductsContext } from "@/contexts/ProductsContext";
 import { useAuthContext } from "@/contexts/AuthContext";
-import { CreateProductType, ProductType } from "@/components/types/Product";
+import { CreateProductType, ProductType, CreateProductVariant } from "@/components/types/Product";
 import { apiClient } from "@/lib/api-client";
 import AdminRouteGuard from "./AdminRouteGuard";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
@@ -36,6 +36,17 @@ export default function AdminProducts() {
   const [isClosing, setIsClosing] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [showProductOverview, setShowProductOverview] = useState(false);
+  const [selectedProductOverview, setSelectedProductOverview] = useState<any>(null);
+  const [isLoadingOverview, setIsLoadingOverview] = useState(false);
+  const [purchasesPage, setPurchasesPage] = useState(1);
+  const [isLoadingMorePurchases, setIsLoadingMorePurchases] = useState(false);
+  const [newVariant, setNewVariant] = useState({
+    variant_name: "",
+    variant_type: "size",
+    variant_value: "",
+    stock: 0
+  });
   const [formData, setFormData] = useState<CreateProductType>({
     name: "",
     price: 0,
@@ -58,6 +69,7 @@ export default function AdminProducts() {
     is_on_discount: false,
     discount_start_date: undefined,
     discount_end_date: undefined,
+    variants: [], // ← NUEVO: Campo para variantes
   });
 
   const formatoPeso = (valor: number): string => {
@@ -99,6 +111,38 @@ export default function AdminProducts() {
     setFormData({
       ...formData,
       tags: newTags
+    });
+  };
+
+  // Funciones para manejar variantes
+  const addVariant = () => {
+    if (newVariant.variant_value.trim() && newVariant.stock > 0) {
+      const variant: CreateProductVariant = {
+        variant_name: "Talla",
+        variant_type: "size",
+        variant_value: newVariant.variant_value.trim(),
+        stock: newVariant.stock
+      };
+      
+      setFormData({
+        ...formData,
+        variants: [...(formData.variants || []), variant]
+      });
+      
+      setNewVariant({
+        variant_name: "",
+        variant_type: "size",
+        variant_value: "",
+        stock: 0
+      });
+    }
+  };
+
+  const removeVariant = (index: number) => {
+    const newVariants = formData.variants?.filter((_, i) => i !== index) || [];
+    setFormData({
+      ...formData,
+      variants: newVariants
     });
   };
 
@@ -513,6 +557,13 @@ export default function AdminProducts() {
     e.preventDefault();
     setIsSubmitting(true);
 
+    // Validación de variantes (tallas) - OBLIGATORIO
+    if (!formData.variants || formData.variants.length === 0) {
+      alert('Debes agregar al menos una talla para el producto');
+      setIsSubmitting(false);
+      return;
+    }
+
     // Validaciones de descuento
     if (formData.is_on_discount) {
       if (!formData.original_price || !formData.discount_percentage) {
@@ -556,10 +607,14 @@ export default function AdminProducts() {
     }
 
     try {
+      // Calcular stock total desde las variantes
+      const totalStock = formData.variants?.reduce((total, variant) => total + variant.stock, 0) || 0;
+      
       // Filter out null/empty values from images array before sending to API
       const cleanFormData = {
         ...formData,
-        images: formData.images.filter(img => img && img.trim() !== '')
+        images: formData.images.filter(img => img && img.trim() !== ''),
+        stock_quantity: totalStock // Calcular automáticamente desde variantes
       };
 
       if (editingProduct) {
@@ -592,6 +647,12 @@ export default function AdminProducts() {
       setImageUploadType('url');
       setUploadedImageUrls([]);
       setSelectedImages([]);
+      setNewVariant({
+        variant_name: "",
+        variant_type: "size",
+        variant_value: "",
+        stock: 0
+      });
       setFormData({
         name: "",
         price: 0,
@@ -602,9 +663,9 @@ export default function AdminProducts() {
         gender: "unisex",
         description: "",
         specifications: [],
-        sizes: [],
+        sizes: [], // Mantener para compatibilidad con API
         status: "active",
-        stock_quantity: 0,
+        stock_quantity: 0, // Se calculará automáticamente desde variantes
         sku: "",
         weight: undefined,
         dimensions: undefined,
@@ -614,6 +675,7 @@ export default function AdminProducts() {
         is_on_discount: false,
         discount_start_date: undefined,
         discount_end_date: undefined,
+        variants: [], // ← OBLIGATORIO: Al menos una talla
       });
       setIsCreating(false);
     } catch (error) {
@@ -632,6 +694,12 @@ export default function AdminProducts() {
     setImageUploadType('url');
     setUploadedImageUrls([]);
     setSelectedImages([]);
+    setNewVariant({
+      variant_name: "",
+      variant_type: "size",
+      variant_value: "",
+      stock: 0
+    });
     setFormData({
       name: product.name,
       price: product.price,
@@ -642,7 +710,7 @@ export default function AdminProducts() {
       gender: product.gender,
       description: product.description || "",
       specifications: product.specifications || [],
-      sizes: product.sizes || [],
+      sizes: product.sizes || [], // Mantener para compatibilidad
       status: product.status,
       stock_quantity: product.stock_quantity || 0,
       sku: product.sku || "",
@@ -654,6 +722,7 @@ export default function AdminProducts() {
       is_on_discount: product.is_on_discount || false,
       discount_start_date: product.discount_start_date || undefined,
       discount_end_date: product.discount_end_date || undefined,
+      variants: product.variants || [], // ← OBLIGATORIO: Cargar variantes
     });
     setIsCreating(true);
   };
@@ -733,6 +802,57 @@ export default function AdminProducts() {
     }
   };
 
+  const handleProductOverview = async (product: any) => {
+    setShowProductOverview(true);
+    setIsLoadingOverview(true);
+    setSelectedProductOverview(null);
+    setPurchasesPage(1); // Reset page
+    
+    try {
+      const response = await apiClient.getProductOverview(product.id);
+      if (response.success) {
+        setSelectedProductOverview(response.data);
+      } else {
+        alert('Error al cargar el overview del producto');
+        setShowProductOverview(false);
+      }
+    } catch (error) {
+      console.error('Error loading product overview:', error);
+      alert('Error al cargar el overview del producto');
+      setShowProductOverview(false);
+    } finally {
+      setIsLoadingOverview(false);
+    }
+  };
+
+  const loadMorePurchases = async () => {
+    if (!selectedProductOverview?.productId || isLoadingMorePurchases) return;
+    
+    const nextPage = purchasesPage + 1;
+    
+    if (nextPage > selectedProductOverview.purchases.totalPages) return;
+    
+    setIsLoadingMorePurchases(true);
+    
+    try {
+      const response = await apiClient.getProductOverview(selectedProductOverview.productId, nextPage);
+      if (response.success) {
+        setSelectedProductOverview((prev: any) => ({
+          ...prev,
+          purchases: {
+            ...response.data.purchases,
+            purchases: [...prev.purchases.purchases, ...response.data.purchases.purchases]
+          }
+        }));
+        setPurchasesPage(nextPage);
+      }
+    } catch (error) {
+      console.error('Error loading more purchases:', error);
+    } finally {
+      setIsLoadingMorePurchases(false);
+    }
+  };
+
   if (loading) {
     return <LoadingSpinner size="lg" text="Cargando productos..." fullScreen />
   }
@@ -760,6 +880,12 @@ export default function AdminProducts() {
             setImageUploadType('url');
             setUploadedImageUrls([]);
             setSelectedImages([]);
+            setNewVariant({
+              variant_name: "",
+              variant_type: "size",
+              variant_value: "",
+              stock: 0
+            });
             setFormData({
               name: "",
               price: 0,
@@ -770,9 +896,9 @@ export default function AdminProducts() {
               gender: "unisex",
               description: "",
               specifications: [],
-              sizes: [],
+              sizes: [], // Mantener para compatibilidad
               status: "active",
-              stock_quantity: 0,
+              stock_quantity: 0, // Se calculará desde variantes
               sku: "",
               weight: undefined,
               dimensions: undefined,
@@ -782,6 +908,7 @@ export default function AdminProducts() {
               is_on_discount: false,
               discount_start_date: undefined,
               discount_end_date: undefined,
+              variants: [], // ← OBLIGATORIO: Al menos una talla
             });
           }}
           className="w-full sm:w-auto bg-[#4a5a3f] text-white px-6 py-2 rounded-md hover:bg-[#3d4a34] transition-colors cursor-pointer text-center"
@@ -1897,26 +2024,6 @@ export default function AdminProducts() {
                 </div>
               </div>
               
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Cantidad en Stock
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  value={formData.stock_quantity?.toString() || ""}
-                  onChange={(e) =>
-                    setFormData({ ...formData, stock_quantity: Number(e.target.value) || 0 })
-                  }
-                  onFocus={(e) => {
-                    if (e.target.value === "0") {
-                      e.target.value = "";
-                    }
-                  }}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#4a5a3f] cursor-text"
-                  required
-                />
-              </div>
             </div>
 
             <div>
@@ -2078,124 +2185,99 @@ export default function AdminProducts() {
               </p>
             </div>
 
-            <div>
+
+            {/* Sección de Variantes */}
+            <div className="md:col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Tallas Disponibles
+                Tallas y Stock <span className="text-red-500">*</span>
               </label>
-              
-              {/* Tallas por letras */}
-              <div className="mb-4">
-                <p className="text-sm font-medium text-gray-600 mb-2">Tallas por letras:</p>
-                <div className="flex flex-wrap gap-2">
-                  {['XS', 'S', 'M', 'L', 'XL', 'XXL'].map((size) => (
-                    <button
-                      key={size}
-                      type="button"
-                      onClick={() => {
-                        const currentSizes = formData.sizes || [];
-                        if (currentSizes.includes(size)) {
-                          setFormData({
-                            ...formData,
-                            sizes: currentSizes.filter(s => s !== size)
-                          });
-                        } else {
-                          setFormData({
-                            ...formData,
-                            sizes: [...currentSizes, size]
-                          });
-                        }
-                      }}
-                      className={`px-3 py-1 rounded-full text-sm font-medium transition-colors cursor-pointer ${
-                        formData.sizes?.includes(size)
-                          ? 'bg-[#4a5a3f] text-white'
-                          : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                      }`}
-                    >
-                      {size}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Tallas numéricas */}
-              <div className="mb-4">
-                <p className="text-sm font-medium text-gray-600 mb-2">Tallas numéricas:</p>
-                <div className="flex flex-wrap gap-2">
-                  {['28', '30', '32', '34', '36', '38', '40', '42', '44', '46', '48', '50'].map((size) => (
-                    <button
-                      key={size}
-                      type="button"
-                      onClick={() => {
-                        const currentSizes = formData.sizes || [];
-                        if (currentSizes.includes(size)) {
-                          setFormData({
-                            ...formData,
-                            sizes: currentSizes.filter(s => s !== size)
-                          });
-                        } else {
-                          setFormData({
-                            ...formData,
-                            sizes: [...currentSizes, size]
-                          });
-                        }
-                      }}
-                      className={`px-3 py-1 rounded-full text-sm font-medium transition-colors cursor-pointer ${
-                        formData.sizes?.includes(size)
-                          ? 'bg-[#4a5a3f] text-white'
-                          : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                      }`}
-                    >
-                      {size}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Tallas personalizadas */}
-              <div>
-                <p className="text-sm font-medium text-gray-600 mb-2">Tallas personalizadas:</p>
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    placeholder="Ej: 2XL, 3XL, ÚNICA, etc."
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#4a5a3f] cursor-text"
-                    onKeyPress={(e) => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault();
-                        const customSize = e.currentTarget.value.trim();
-                        if (customSize && !formData.sizes?.includes(customSize)) {
-                          setFormData({
-                            ...formData,
-                            sizes: [...(formData.sizes || []), customSize]
-                          });
-                          e.currentTarget.value = '';
-                        }
-                      }
-                    }}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const input = document.querySelector('input[placeholder*="personalizadas"]') as HTMLInputElement;
-                      const customSize = input?.value.trim();
-                      if (customSize && !formData.sizes?.includes(customSize)) {
-                        setFormData({
-                          ...formData,
-                          sizes: [...(formData.sizes || []), customSize]
-                        });
-                        input.value = '';
-                      }
-                    }}
-                    className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors cursor-pointer"
-                  >
-                    Agregar
-                  </button>
-                </div>
-              </div>
-
-              <p className="text-xs text-gray-500 mt-2">
-                Haz clic en las tallas disponibles para este producto
+              <p className="text-xs text-gray-500 mb-4">
+                Define las tallas disponibles y su stock individual. El stock total se calculará automáticamente.
               </p>
+              
+              {/* Formulario para agregar talla */}
+              <div className="bg-gray-50 p-4 rounded-lg mb-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">
+                      Talla
+                    </label>
+                    <input
+                      type="text"
+                      value={newVariant.variant_value}
+                      onChange={(e) => setNewVariant({...newVariant, variant_value: e.target.value})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#4a5a3f] cursor-text text-sm"
+                      placeholder="Ej: S, M, L, 28, 30, etc."
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">
+                      Stock
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={newVariant.stock}
+                      onChange={(e) => setNewVariant({...newVariant, stock: Number(e.target.value) || 0})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#4a5a3f] cursor-text text-sm"
+                      placeholder="0"
+                    />
+                  </div>
+                  <div className="flex items-end">
+                    <button
+                      type="button"
+                      onClick={addVariant}
+                      className="w-full px-4 py-2 bg-[#4a5a3f] text-white rounded-md hover:bg-[#3d4a34] transition-colors cursor-pointer text-sm"
+                    >
+                      + Agregar Talla
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Lista de tallas agregadas */}
+              {formData.variants && formData.variants.length > 0 ? (
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <h4 className="text-sm font-medium text-gray-700">Tallas agregadas ({formData.variants.length}):</h4>
+                    <div className="text-sm text-gray-600">
+                      <span className="font-medium">Stock total:</span> {formData.variants.reduce((total, variant) => total + variant.stock, 0)} unidades
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    {formData.variants.map((variant, index) => (
+                      <div key={index} className="flex items-center justify-between bg-white border border-gray-200 rounded-lg p-3">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-medium text-gray-900">
+                              Talla {variant.variant_value}
+                            </span>
+                            <span className="text-xs text-gray-500">
+                              - Stock: {variant.stock}
+                            </span>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => removeVariant(index)}
+                          className="text-red-500 hover:text-red-700 text-sm"
+                        >
+                          Eliminar
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                  <p className="text-sm text-yellow-800 font-medium">
+                    ⚠️ Debes agregar al menos una talla para continuar
+                  </p>
+                  <p className="text-xs text-yellow-600 mt-1">
+                    Usa el formulario de arriba para agregar tallas y su stock
+                  </p>
+                </div>
+              )}
             </div>
 
             <div>
@@ -2430,15 +2512,33 @@ export default function AdminProducts() {
                     )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    <span className={`font-medium ${
-                      product.stock_quantity > 10 
-                        ? "text-green-600" 
-                        : product.stock_quantity > 0 
-                        ? "text-yellow-600" 
-                        : "text-red-600"
-                    }`}>
-                      {product.stock_quantity || 0}
-                    </span>
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <span className={`font-medium ${
+                          (() => {
+                            const stock = (product as any).stock?.totalStock || product.stock_quantity || 0;
+                            return stock > 10 
+                              ? "text-green-600" 
+                              : stock > 0 
+                              ? "text-yellow-600" 
+                              : "text-red-600";
+                          })()
+                        }`}>
+                          {(product as any).stock?.totalStock || product.stock_quantity || 0}
+                        </span>
+                        <span className="text-xs text-gray-500">total</span>
+                      </div>
+                      {(product as any).stock?.hasVariants && (
+                        <div className="text-xs text-blue-600">
+                          {(product as any).stock.variants?.length || 0} variantes
+                        </div>
+                      )}
+                      {(product as any).stock?.reservedStock > 0 && (
+                        <div className="text-xs text-orange-600">
+                          {(product as any).stock.reservedStock} reservado
+                        </div>
+                      )}
+                    </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {product.sku || "N/A"}
@@ -2473,6 +2573,13 @@ export default function AdminProducts() {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                     <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => handleProductOverview(product)}
+                        disabled={isLoadingOverview}
+                        className="text-blue-600 hover:text-blue-800 cursor-pointer text-xs"
+                      >
+                        Overview
+                      </button>
                       <button
                         onClick={() => handleEdit(product)}
                         className="text-[#4a5a3f] hover:text-[#3d4a34] cursor-pointer"
@@ -2572,6 +2679,218 @@ export default function AdminProducts() {
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Modal de Overview del Producto */}
+      {showProductOverview && (
+        <div className="fixed inset-0 backdrop-blur-[2px] flex items-center justify-center z-50 p-4">
+          {isLoadingOverview ? (
+            <div className="bg-white rounded-lg p-8 shadow-lg border border-gray-200">
+              <div className="flex flex-col items-center justify-center">
+                <img 
+                  src="/favicon.png" 
+                  alt="enoughh logo" 
+                  className="w-16 h-16 animate-spin mb-4"
+                />
+                <div className="text-sm text-gray-600">Cargando overview del producto...</div>
+              </div>
+            </div>
+          ) : selectedProductOverview ? (
+            <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-gray-200">
+            <div className="p-6">
+              <div className="flex justify-between items-center mb-4">
+                <div className="flex items-center gap-2">
+                  <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                  </svg>
+                  <h3 className="text-lg font-semibold text-gray-900">
+                    Overview: {selectedProductOverview.productName || 'Producto'}
+                  </h3>
+                </div>
+                <button
+                  onClick={() => setShowProductOverview(false)}
+                  className="text-gray-500 hover:text-gray-700 cursor-pointer"
+                >
+                  ✕
+                </button>
+              </div>
+
+              {/* Resumen */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 shadow-sm">
+                  <div className="flex items-center gap-2 mb-2">
+                    <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                    </svg>
+                    <div className="text-sm text-gray-600 font-medium">Stock Total</div>
+                  </div>
+                  <div className="text-xl font-bold text-gray-900">{selectedProductOverview.stock.totalStock}</div>
+                </div>
+                <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 shadow-sm">
+                  <div className="flex items-center gap-2 mb-2">
+                    <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <div className="text-sm text-gray-600 font-medium">Disponible</div>
+                  </div>
+                  <div className="text-xl font-bold text-gray-900">{selectedProductOverview.stock.availableStock}</div>
+                </div>
+                <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 shadow-sm">
+                  <div className="flex items-center gap-2 mb-2">
+                    <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                    </svg>
+                    <div className="text-sm text-gray-600 font-medium">Ventas</div>
+                  </div>
+                  <div className="text-xl font-bold text-gray-900">{selectedProductOverview.purchases.totalPurchases}</div>
+                </div>
+                <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 shadow-sm">
+                  <div className="flex items-center gap-2 mb-2">
+                    <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
+                    </svg>
+                    <div className="text-sm text-gray-600 font-medium">Ingresos</div>
+                  </div>
+                  <div className="text-xl font-bold text-gray-900">${selectedProductOverview.purchases.totalRevenue.toLocaleString('es-CO')}</div>
+                </div>
+              </div>
+
+
+              {/* Variantes con Compras */}
+              {selectedProductOverview?.stock?.variants && selectedProductOverview.stock.variants.length > 0 && (
+                <div className="mb-6">
+                  <div className="flex items-center gap-2 mb-3">
+                    <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                    </svg>
+                    <h4 className="text-md font-medium text-gray-900">Tallas Vendidas</h4>
+                  </div>
+                  <div className="space-y-3">
+                    {/* Obtener todas las tallas únicas vendidas */}
+                    {(() => {
+                      const uniqueSizes = [...new Set(selectedProductOverview.purchases.purchases.map((purchase: any) => purchase.variant_value))];
+                      
+                      return uniqueSizes.map((size: any, index: number) => {
+                        const sizePurchases = selectedProductOverview.purchases.purchases.filter(
+                          (purchase: any) => purchase.variant_value === size
+                        );
+                        const sizeRevenue = sizePurchases.reduce((sum: number, purchase: any) => sum + purchase.total_amount, 0);
+                        const sizeQuantitySold = sizePurchases.reduce((sum: number, purchase: any) => sum + purchase.quantity, 0);
+                        
+                        return (
+                          <div key={index} className="bg-gray-50 p-4 rounded-lg border border-gray-200 shadow-sm">
+                            <div className="flex justify-between items-start mb-3">
+                              <div>
+                                <div className="font-medium text-gray-900 text-lg">Talla {size}</div>
+                                <div className="text-sm text-gray-600">Talla vendida: {size}</div>
+                              </div>
+                              <div className="text-right">
+                                <div className="text-sm font-medium text-gray-900">{sizeQuantitySold} vendidas</div>
+                                <div className="text-xs text-gray-600">${sizeRevenue.toLocaleString('es-CO')} ingresos</div>
+                              </div>
+                            </div>
+                            
+                            {/* Compras específicas de esta talla */}
+                            <div className="mt-3">
+                              <div className="text-xs font-medium text-gray-600 mb-2">Compras de talla {size}:</div>
+                              <div className="space-y-1 max-h-32 overflow-y-auto">
+                                {sizePurchases.map((purchase: any, purchaseIndex: number) => (
+                                  <div key={purchaseIndex} className="flex justify-between items-center text-xs bg-white p-2 rounded border border-gray-200">
+                                    <div>
+                                      <span className="font-medium text-gray-900">{purchase.user_name}</span>
+                                      <span className="text-gray-600 ml-2">({purchase.quantity} unidades)</span>
+                                    </div>
+                                    <div className="text-gray-600">
+                                      {new Date(purchase.purchase_date).toLocaleString('es-CO', {
+                                        year: 'numeric',
+                                        month: '2-digit',
+                                        day: '2-digit',
+                                        hour: '2-digit',
+                                        minute: '2-digit'
+                                      })}
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      });
+                    })()}
+                  </div>
+                </div>
+              )}
+
+              {/* Compras Recientes */}
+              {selectedProductOverview?.purchases?.purchases && selectedProductOverview.purchases.purchases.length > 0 && (
+                <div>
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                      </svg>
+                      <h4 className="text-md font-medium text-gray-900">
+                        Todas las Compras ({selectedProductOverview.purchases.totalPurchases})
+                      </h4>
+                    </div>
+                    {purchasesPage < selectedProductOverview.purchases.totalPages && (
+                      <button
+                        onClick={loadMorePurchases}
+                        disabled={isLoadingMorePurchases}
+                        className={`px-4 py-2 rounded-md transition-colors cursor-pointer flex items-center gap-2 ${
+                          isLoadingMorePurchases 
+                            ? 'bg-gray-400 text-gray-200 cursor-not-allowed' 
+                            : 'bg-[#4a5a3f] text-white hover:bg-[#3d4a34]'
+                        }`}
+                      >
+                        {isLoadingMorePurchases && <LoadingSpinner size="sm" color="white" />}
+                        {isLoadingMorePurchases ? 'Cargando...' : `Cargar más (Página ${purchasesPage + 1}/${selectedProductOverview.purchases.totalPages})`}
+                      </button>
+                    )}
+                  </div>
+                  <div className="space-y-2 max-h-60 overflow-y-auto">
+                    {selectedProductOverview.purchases.purchases.map((purchase: any, index: number) => (
+                      <div key={index} className="flex items-center justify-between bg-gray-50 p-3 rounded-lg border border-gray-200 shadow-sm">
+                        <div className="flex items-center gap-3">
+                          <img 
+                            src={purchase.product_image} 
+                            alt={purchase.product_name}
+                            className="w-8 h-8 rounded object-cover"
+                          />
+                          <div>
+                            <div className="text-sm font-medium text-gray-900">{purchase.user_name}</div>
+                            <div className="text-xs text-gray-500">{purchase.user_email}</div>
+                            {purchase.variant_value && (
+                              <div className="text-xs text-blue-600 font-medium">
+                                Talla: {purchase.variant_value}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-sm font-medium text-gray-900">${purchase.total_amount.toLocaleString('es-CO')}</div>
+                          <div className="text-xs text-gray-500">
+                            {purchase.quantity} unidades
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            {new Date(purchase.purchase_date).toLocaleString('es-CO', {
+                              year: 'numeric',
+                              month: '2-digit',
+                              day: '2-digit',
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            })}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+          ) : null}
         </div>
       )}
       </div>

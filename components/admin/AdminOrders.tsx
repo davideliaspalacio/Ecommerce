@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { apiClient } from "@/lib/api-client";
 import {
   OrderType,
@@ -28,6 +28,11 @@ import {
   User,
   Mail,
   Phone,
+  TrendingUp,
+  TrendingDown,
+  AlertTriangle,
+  BarChart3,
+  RefreshCw,
 } from "lucide-react";
 
 export default function AdminOrders() {
@@ -38,6 +43,12 @@ export default function AdminOrders() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [showOrderModal, setShowOrderModal] = useState(false);
+  const [stockImpact, setStockImpact] = useState({
+    totalReserved: 0,
+    totalRevenue: 0,
+    productsAffected: 0
+  });
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   useEffect(() => {
     fetchOrders();
@@ -47,9 +58,13 @@ export default function AdminOrders() {
     filterOrders();
   }, [orders, searchTerm, statusFilter]);
 
-  const fetchOrders = async () => {
+  const fetchOrders = useCallback(async (showRefresh = false) => {
     try {
-      setLoading(true);
+      if (showRefresh) {
+        setIsRefreshing(true);
+      } else {
+        setLoading(true);
+      }
 
       const response = await apiClient.getAdminOrders();
 
@@ -59,15 +74,21 @@ export default function AdminOrders() {
 
       console.log("Orders fetched:", response.data?.length || 0);
       setOrders(response.data || []);
+      
+      // Update stock impact if available
+      if (response.stockImpact) {
+        setStockImpact(response.stockImpact);
+      }
     } catch (error) {
       console.error("Error fetching orders:", error);
       alert("Error: " + (error as Error).message);
     } finally {
       setLoading(false);
+      setIsRefreshing(false);
     }
-  };
+  }, []);
 
-  const filterOrders = () => {
+  const filterOrders = useCallback(() => {
     let filtered = orders;
 
     if (searchTerm) {
@@ -86,7 +107,7 @@ export default function AdminOrders() {
     }
 
     setFilteredOrders(filtered);
-  };
+  }, [orders, searchTerm, statusFilter]);
 
   const updateOrderStatus = async (
     orderId: string,
@@ -247,7 +268,7 @@ export default function AdminOrders() {
     }
   };
 
-  const getStatusCounts = () => {
+  const getStatusCounts = useMemo(() => {
     return {
       all: orders.length,
       pending: orders.filter((o) => o.status === "pending").length,
@@ -263,7 +284,39 @@ export default function AdminOrders() {
       cancelled: orders.filter((o) => o.status === "cancelled").length,
       returned: orders.filter((o) => o.status === "returned").length,
     };
-  };
+  }, [orders]);
+
+  // Calculate stock impact metrics
+  const stockMetrics = useMemo(() => {
+    const stockDeductingStatuses = ['confirmed', 'processing', 'shipped', 'delivered', 'completed'];
+    const stockReservingStatuses = ['pending'];
+    const stockReleasingStatuses = ['cancelled'];
+
+    const stockDeductingOrders = orders.filter(o => stockDeductingStatuses.includes(o.status));
+    const stockReservingOrders = orders.filter(o => stockReservingStatuses.includes(o.status));
+    const stockReleasingOrders = orders.filter(o => stockReleasingStatuses.includes(o.status));
+
+    const totalReserved = stockReservingOrders.reduce((sum, order) => 
+      sum + (order.items?.reduce((itemSum, item) => itemSum + item.quantity, 0) || 0), 0
+    );
+
+    const totalRevenue = stockDeductingOrders.reduce((sum, order) => sum + order.total, 0);
+
+    const uniqueProducts = new Set();
+    orders.forEach(order => {
+      order.items?.forEach(item => uniqueProducts.add(item.product_id));
+    });
+
+    return {
+      totalReserved,
+      totalRevenue,
+      productsAffected: uniqueProducts.size,
+      stockDeductingCount: stockDeductingOrders.length,
+      stockReservingCount: stockReservingOrders.length,
+      stockReleasingCount: stockReleasingOrders.length
+    };
+  }, [orders]);
+
 
   if (loading) {
     return (
@@ -290,12 +343,77 @@ export default function AdminOrders() {
       </label>
       {/* Header */}
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">
-          Gestión de Órdenes
-        </h1>
-        <p className="text-gray-600">
-          Administra el estado y seguimiento de todas las órdenes
-        </p>
+        <div className="flex justify-between items-start">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900 mb-2">
+              Gestión de Órdenes
+            </h1>
+            <p className="text-gray-600">
+              Administra el estado y seguimiento de todas las órdenes
+            </p>
+          </div>
+          <button
+            onClick={() => fetchOrders(true)}
+            disabled={isRefreshing}
+            className="flex items-center gap-2 px-4 py-2 bg-[#4a5a3f] text-white rounded-lg hover:bg-[#3d4a34] transition-colors disabled:opacity-50"
+          >
+            <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+            {isRefreshing ? 'Actualizando...' : 'Actualizar'}
+          </button>
+        </div>
+      </div>
+
+      {/* Stock Impact Dashboard */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <div className="bg-white rounded-lg shadow-sm p-6">
+          <div className="flex items-center">
+            <div className="p-2 bg-blue-100 rounded-lg">
+              <BarChart3 className="w-6 h-6 text-blue-600" />
+            </div>
+            <div className="ml-4">
+              <p className="text-sm font-medium text-gray-600">Stock Reservado</p>
+              <p className="text-2xl font-bold text-gray-900">{stockMetrics.totalReserved}</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-lg shadow-sm p-6">
+          <div className="flex items-center">
+            <div className="p-2 bg-green-100 rounded-lg">
+              <TrendingUp className="w-6 h-6 text-green-600" />
+            </div>
+            <div className="ml-4">
+              <p className="text-sm font-medium text-gray-600">Ingresos Totales</p>
+              <p className="text-2xl font-bold text-gray-900">
+                ${stockMetrics.totalRevenue.toLocaleString('es-CO')}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-lg shadow-sm p-6">
+          <div className="flex items-center">
+            <div className="p-2 bg-purple-100 rounded-lg">
+              <Package className="w-6 h-6 text-purple-600" />
+            </div>
+            <div className="ml-4">
+              <p className="text-sm font-medium text-gray-600">Productos Afectados</p>
+              <p className="text-2xl font-bold text-gray-900">{stockMetrics.productsAffected}</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-lg shadow-sm p-6">
+          <div className="flex items-center">
+            <div className="p-2 bg-orange-100 rounded-lg">
+              <AlertTriangle className="w-6 h-6 text-orange-600" />
+            </div>
+            <div className="ml-4">
+              <p className="text-sm font-medium text-gray-600">Órdenes Pendientes</p>
+              <p className="text-2xl font-bold text-gray-900">{stockMetrics.stockReservingCount}</p>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Filtros y búsqueda */}
@@ -323,40 +441,40 @@ export default function AdminOrders() {
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#4a5a3f] focus:border-transparent"
             >
               <option value="all">
-                Todos los estados ({getStatusCounts().all})
+                Todos los estados ({getStatusCounts.all})
               </option>
               <option value="pending">
-                Pendiente ({getStatusCounts().pending})
+                Pendiente ({getStatusCounts.pending})
               </option>
               <option value="payment_approved">
-                Pago Aprobado ({getStatusCounts().payment_approved})
+                Pago Aprobado ({getStatusCounts.payment_approved})
               </option>
               <option value="processing">
-                En Preparación ({getStatusCounts().processing})
+                En Preparación ({getStatusCounts.processing})
               </option>
               <option value="ready_to_ship">
-                Listo para Enviar ({getStatusCounts().ready_to_ship})
+                Listo para Enviar ({getStatusCounts.ready_to_ship})
               </option>
               <option value="shipped">
-                Enviado ({getStatusCounts().shipped})
+                Enviado ({getStatusCounts.shipped})
               </option>
               <option value="in_transit">
-                En Tránsito ({getStatusCounts().in_transit})
+                En Tránsito ({getStatusCounts.in_transit})
               </option>
               <option value="delivered">
-                Entregado ({getStatusCounts().delivered})
+                Entregado ({getStatusCounts.delivered})
               </option>
               <option value="completed">
-                Completado ({getStatusCounts().completed})
+                Completado ({getStatusCounts.completed})
               </option>
               <option value="failed">
-                Fallido ({getStatusCounts().failed})
+                Fallido ({getStatusCounts.failed})
               </option>
               <option value="cancelled">
-                Cancelado ({getStatusCounts().cancelled})
+                Cancelado ({getStatusCounts.cancelled})
               </option>
               <option value="returned">
-                Devuelto ({getStatusCounts().returned})
+                Devuelto ({getStatusCounts.returned})
               </option>
             </select>
           </div>
