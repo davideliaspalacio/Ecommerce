@@ -28,7 +28,22 @@ export default function ProductModal() {
     
     const handleAddToCart = () => {
         if (!selectedProduct || !selectedSize) return
-        addToCart(selectedProduct, selectedSize)
+        
+        // Encontrar la variante correspondiente a la talla seleccionada
+        const selectedVariant = selectedProduct.variants?.find(
+            (variant: any) => variant.variant_value === selectedSize
+        );
+        
+        if (selectedProduct.variants?.length > 0 && !selectedVariant) {
+          console.error('❌ No variant found for selected size:', {
+            selectedSize,
+            available_variants: selectedProduct.variants.map((v: any) => ({ id: v.id, value: v.variant_value }))
+          });
+          alert('Error: No se encontró la variante para la talla seleccionada. Por favor intenta nuevamente.');
+          return;
+        }
+        
+        addToCart(selectedProduct, selectedVariant?.id)
         setSelectedProduct(null)
         if (user) {
             openCart()
@@ -262,17 +277,17 @@ export default function ProductModal() {
               <p className="text-sm text-gray-600">{selectedProduct.description}</p>
             </div>
             <div className="flex gap-2 mb-4">
-              {selectedProduct.sizes.map((size: string) => (
+              {selectedProduct.variants?.map((variant: any) => (
                 <button
-                  key={size}
-                  onClick={() => setSelectedSize(size)}
+                  key={variant.id}
+                  onClick={() => setSelectedSize(variant.variant_value)}
                   className={`px-6 py-2 border transition-all duration-200 cursor-pointer ${
-                    selectedSize === size
+                    selectedSize === variant.variant_value
                       ? "border-[#4a5a3f] bg-[#4a5a3f] text-white scale-105"
                       : "border-gray-300 hover:border-[#4a5a3f] hover:scale-105"
                   }`}
                 >
-                  {size}
+                  {variant.variant_value}
                 </button>
               ))}
             </div>

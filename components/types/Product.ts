@@ -1,3 +1,19 @@
+export interface ProductVariant {
+  id: string;
+  variant_name: string;
+  variant_type: string;
+  variant_value: string;
+  stock: number;
+  availableStock?: number;
+}
+
+export interface CreateProductVariant {
+  variant_name: string;
+  variant_type: string;
+  variant_value: string;
+  stock: number;
+}
+
 export interface ProductType {
     id: string;
     name: string;
@@ -29,6 +45,14 @@ export interface ProductType {
       depth: number;
     };
     tags: string[];
+    variants?: ProductVariant[]; 
+    stock?: {
+      totalStock: number;
+      availableStock: number;
+      reservedStock: number;
+      hasVariants: boolean;
+      variants?: ProductVariant[];
+    };
     created_at: string;
     updated_at: string;
     created_by?: string;
@@ -62,6 +86,7 @@ export interface CreateProductType {
       depth: number;
     };
     tags?: string[];
+    variants?: CreateProductVariant[]; // ← Usar CreateProductVariant (sin id)
   }
 
 export interface ProductFilters {
@@ -176,4 +201,41 @@ export const getAllImages = (product: ProductType): string[] => {
   if (product.image_back) legacyImages.push(product.image_back);
   
   return legacyImages;
+};
+
+export const hasVariants = (product: ProductType): boolean => {
+  return !!(product.variants && product.variants.length > 0);
+};
+
+export const getTotalStock = (product: ProductType): number => {
+  if (hasVariants(product)) {
+    return product.variants!.reduce((total, variant) => total + variant.stock, 0);
+  }
+  return product.stock_quantity || 0;
+};
+
+export const getVariantStock = (product: ProductType, variantId: string): number => {
+  if (!hasVariants(product)) return 0;
+  
+  const variant = product.variants!.find(v => v.id === variantId);
+  return variant ? variant.stock : 0;
+};
+
+export const getVariantAvailableStock = (product: ProductType, variantId: string): number => {
+  if (!hasVariants(product)) return product.stock_quantity || 0;
+  
+  const variant = product.variants!.find(v => v.id === variantId);
+  return variant ? (variant.availableStock || variant.stock) : 0;
+};
+
+export const getAvailableVariants = (product: ProductType): ProductVariant[] => {
+  if (!hasVariants(product)) return [];
+  
+  return product.variants!.filter(variant => 
+    (variant.availableStock || variant.stock) > 0
+  );
+};
+
+export const formatVariantName = (variant: ProductVariant): string => {
+  return `${variant.variant_name} (${variant.variant_value})`;
 };

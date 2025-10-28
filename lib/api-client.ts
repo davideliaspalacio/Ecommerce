@@ -59,6 +59,7 @@ interface UnreadCountResponse {
 export interface CreateOrderRequest {
   items: {
     product_id: string;
+    variant_id?: string; 
     quantity: number;
     price: number;
   }[];
@@ -377,28 +378,28 @@ class ApiClient {
     return this.request('/cart/total')
   }
 
-  async addToCart(productId: string, quantity: number, size?: string) {
+  async addToCart(productId: string, quantity: number, variantId: string) {
     return this.request('/cart/add', {
       method: 'POST',
-      body: JSON.stringify({ product_id: productId, quantity, size }),
+      body: JSON.stringify({ product_id: productId, quantity, variant_id: variantId }),
     })
   }
 
-  async updateCartItem(id: string, quantity: number) {
-    return this.request(`/cart/${id}`, {
-      method: 'PUT',
+  async updateCartItem(productId: string, size: string, quantity: number) {
+    return this.request(`/cart/${productId}/${size}`, {
+      method: 'PATCH',
       body: JSON.stringify({ quantity }),
     })
   }
 
-  async removeFromCart(id: string) {
-    return this.request(`/cart/${id}`, {
+  async removeFromCart(productId: string, size: string) {
+    return this.request(`/cart/${productId}/${size}`, {
       method: 'DELETE',
     })
   }
 
-  async removeFromCartByProduct(productId: string, size: string) {
-    return this.request(`/cart/${productId}/${size}`, {
+  async removeFromCartByProduct(productId: string, variantId: string) {
+    return this.request(`/cart/${productId}/${variantId}`, {
       method: 'DELETE',
     })
   }
@@ -455,12 +456,13 @@ class ApiClient {
     return this.request('/wishlist')
   }
 
-  async addToWishlist(productId: string, size?: string) {
+  async addToWishlist(productId: string, size?: string, variantId?: string) {
     return this.request('/wishlist/products', {
       method: 'POST',
       body: JSON.stringify({ 
         product_id: productId,
-        size: size || null
+        size: size || null,
+        variant_id: variantId || null
       }),
     })
   }
@@ -483,6 +485,10 @@ class ApiClient {
 
   async getAdminOrders(page: number = 1, limit: number = 20) {
     return this.request(`/orders/admin`)
+  }
+
+  async getProductOverview(productId: string, page: number = 1, limit: number = 10) {
+    return this.request(`/orders/product/${productId}/overview?page=${page}&limit=${limit}`)
   }
 
   async getAdminCustomers(page: number = 1, limit: number = 20) {
@@ -649,6 +655,24 @@ class ApiClient {
 
   async getOrderStatusHistoryEntry(orderId: string, historyId: string) {
     return this.request(`/orders/${orderId}/status-history/${historyId}`)
+  }
+
+  async getProductStock(productId: string) {
+    return this.request(`/orders/stock/${productId}`)
+  }
+
+  async getPendingOrder() {
+    return this.request('/orders/pending')
+  }
+
+  async cancelPendingOrder() {
+    return this.request('/orders/cancel-latest', {
+      method: 'POST',
+    })
+  }
+
+  async checkOrderTimeout(orderId: string) {
+    return this.request(`/orders/${orderId}/timeout-check`)
   }
 
   async updateOrderStatusHistoryNotes(orderId: string, historyId: string, notes: string) {

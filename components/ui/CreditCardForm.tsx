@@ -246,14 +246,6 @@ export default function CreditCardForm({
       {/* Botones */}
       <div className="flex gap-3 pt-2">
         <button
-          type="button"
-          onClick={onCancel}
-          disabled={isProcessing}
-          className="flex-1 px-4 py-3 border border-gray-300 rounded-lg font-medium hover:border-black transition-colors disabled:opacity-50"
-        >
-          Cancelar
-        </button>
-        <button
           type="submit"
           disabled={isProcessing}
           className="flex-1 px-4 py-3 bg-[#4a5a3f] text-white rounded-lg font-medium hover:bg-[#3d4a34] transition-colors disabled:opacity-50 flex items-center justify-center gap-2"

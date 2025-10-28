@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { useCartStore } from "@/store/cartStore";
-import { getCurrentPrice, isDiscountActive, getDiscountPercentage } from "@/components/types/Product";
+import { getCurrentPrice, isDiscountActive, getDiscountPercentage, hasVariants } from "@/components/types/Product";
 import { ShippingInfoType } from "@/components/types/Order";
 import { apiClient } from "@/lib/api-client";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,10 +14,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Truck, CreditCard, Lock, Check  } from "lucide-react";
+import { ArrowLeft, Truck, CreditCard, Lock, Check, Clock } from "lucide-react";
 import CreditCardForm from "@/components/ui/CreditCardForm";
 import PaymentSuccessModal from "@/components/ui/PaymentSuccessModal";
 import PaymentErrorModal from "@/components/ui/PaymentErrorModal";
+import PendingOrderModal from "@/components/ui/PendingOrderModal";
+import { usePendingOrder } from "@/hooks/usePendingOrder";
 
 const colombianDepartments = [
   "Amazonas", "Antioquia", "Arauca", "Atlántico", "Bolívar", "Boyacá",
@@ -35,6 +37,19 @@ export default function CheckoutPage() {
   const { user } = useAuthContext();
   const { cart, getTotal, clearCart } = useCartStore();
   const [step, setStep] = useState<'shipping' | 'review' | 'payment'>('shipping');
+
+  // Detectar si viene con step=payment en la URL
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      const stepParam = urlParams.get('step');
+      if (stepParam === 'payment') {
+        setStep('payment');
+        // Limpiar la URL
+        window.history.replaceState({}, '', '/checkout');
+      }
+    }
+  }, []);
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [createdOrderId, setCreatedOrderId] = useState<string | null>(null);
@@ -42,6 +57,19 @@ export default function CheckoutPage() {
   const [showErrorModal, setShowErrorModal] = useState(false);
   const [paymentData, setPaymentData] = useState<any>(null);
   const [paymentCompleted, setPaymentCompleted] = useState(false);
+  const [hasContinuedPendingOrder, setHasContinuedPendingOrder] = useState(false);
+  const [localTimeRemaining, setLocalTimeRemaining] = useState<number | null>(null);
+  
+  const {
+    pendingOrder,
+    isLoading: pendingOrderLoading,
+    error: pendingOrderError,
+    timeRemaining,
+    isExpired,
+    checkPendingOrder,
+    cancelPendingOrder,
+    clearError: clearPendingOrderError
+  } = usePendingOrder();
   
   const [formData, setFormData] = useState<ShippingInfoType>({
     full_name: "",
@@ -59,25 +87,28 @@ export default function CheckoutPage() {
 
   const [errors, setErrors] = useState<Partial<Record<keyof ShippingInfoType, string>>>({});
 
-  // Redirigir si no hay usuario o carrito vacío (pero NUNCA si estamos mostrando modales)
+  // SIN PROTECCIÓN - Permitir acceso a cualquiera
+  useEffect(() => {    
+    console.log('✅ Checkout accesible para todos');
+  }, []);
+
+  // Update local timer for smooth countdown
   useEffect(() => {
-    console.log('🔍 useEffect ejecutándose:', { user: !!user, cartLength: cart.length, paymentCompleted, showSuccessModal, showErrorModal });
-    
-    if (!user) {
-      console.log('❌ No hay usuario, redirigiendo...');
-      router.push("/");
-      return;
+    if (timeRemaining !== null) {
+      setLocalTimeRemaining(timeRemaining);
+      
+      const interval = setInterval(() => {
+        setLocalTimeRemaining(prev => {
+          if (prev === null || prev <= 1000) {
+            return 0;
+          }
+          return prev - 1000;
+        });
+      }, 1000);
+
+      return () => clearInterval(interval);
     }
-    
-    // Solo redirigir si no hay carrito Y no estamos mostrando ningún modal
-    if (cart.length === 0 && !showSuccessModal && !showErrorModal) {
-      console.log('❌ Carrito vacío y sin modales, redirigiendo...');
-      router.push("/");
-      return;
-    }
-    
-    console.log('✅ No redirigiendo, condiciones OK');
-  }, [user, cart, router, showSuccessModal, showErrorModal]);
+  }, [timeRemaining]);
 
 
   const handleChange = (
@@ -135,6 +166,39 @@ export default function CheckoutPage() {
     }
   };
 
+  // Funciones para manejar órdenes pendientes
+  const handleCancelPendingOrder = async () => {
+    const success = await cancelPendingOrder();
+    if (success) {
+      // Resetear el estado de continuación
+      setHasContinuedPendingOrder(false);
+      // Recargar la página para limpiar el estado
+      window.location.reload();
+    }
+  };
+
+  const handleContinuePendingOrder = () => {
+    // Marcar que el usuario decidió continuar con la orden pendiente
+    setHasContinuedPendingOrder(true);
+    // Cerrar el modal del header también
+    if (typeof window !== 'undefined') {
+      // Dispatch custom event to close header modal
+      window.dispatchEvent(new CustomEvent('closePendingOrderModal'));
+    }
+    // Ir directamente al paso de pago
+    setStep('payment');
+  };
+
+  const handleClosePendingOrderModal = () => {
+    if (isExpired) {
+      // Si la orden está expirada, recargar para limpiar el estado
+      window.location.reload();
+    } else {
+      // Si no está expirada, no permitir cerrar sin acción
+      return;
+    }
+  };
+
   const handleContinueToPayment = async () => {
     if (!user || cart.length === 0) {
       setError("Error al procesar el pago. Por favor intenta nuevamente.");
@@ -150,13 +214,39 @@ export default function CheckoutPage() {
       const total = subtotal + tax + SHIPPING_COST;
 
       // Preparar items para el nuevo formato
-      const orderItems = cart.map(item => ({
-        product_id: item.product.id,
-        quantity: item.quantity,
-        price: getCurrentPrice(item.product)
-      }));
+      const orderItems = cart.map(item => {
+        const orderItem: any = {
+          product_id: item.product.id,
+          quantity: item.quantity,
+          price: getCurrentPrice(item.product)
+        };
 
-      // Preparar shipping_info para el nuevo formato
+        if (item.variant_id) {
+          orderItem.variant_id = item.variant_id;
+        } else {
+          console.warn('⚠️ No variant_id found for cart item:', {
+            product_id: item.product.id,
+            product_name: item.product.name,
+            has_variants_in_cart: hasVariants(item.product),
+            cart_item_variant_id: item.variant_id,
+            product_variants: item.product.variants
+          });
+        }
+
+        if (hasVariants(item.product) && !item.variant_id) {
+          console.error('❌ Product has variants but no variant_id provided:', {
+            product_id: item.product.id,
+            product_name: item.product.name,
+            variants: item.product.variants,
+            cart_item_variant_id: item.variant_id
+          });
+          throw new Error(`Product ${item.product.name} has variants but no variant_id was provided. Please select a size.`);
+        }
+
+      return orderItem;
+    });
+
+    // Preparar shipping_info para el nuevo formato
       const shippingInfo = {
         shipping_full_name: formData.full_name,
         shipping_address: formData.address,
@@ -185,6 +275,9 @@ export default function CheckoutPage() {
       const order = orderResponse.data;
       setCreatedOrderId(order.id);
       
+      // Verificar si hay orden pendiente después de crear la orden
+      await checkPendingOrder();
+      
       // Avanzar al paso de pago
       setStep('payment');
     } catch (err: any) {
@@ -196,7 +289,10 @@ export default function CheckoutPage() {
   };
 
   const handleCardSubmit = async (cardData: any) => {
-    if (!createdOrderId) {
+    // Usar la orden pendiente si existe, sino usar la orden creada
+    const orderId = pendingOrder?.id || createdOrderId;
+    
+    if (!orderId) {
       setError("Error: No se encontró la orden");
       return;
     }
@@ -212,7 +308,7 @@ export default function CheckoutPage() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          order_id: createdOrderId,
+          order_id: orderId,
           card_data: {
             card_number: cardData.card_number,
             card_exp_year: cardData.card_exp_year,
@@ -222,11 +318,19 @@ export default function CheckoutPage() {
           customer_data: {
             doc_type: cardData.doc_type,
             doc_number: cardData.doc_number,
-            name: formData.full_name.split(' ')[0],
-            last_name: formData.full_name.split(' ').slice(1).join(' ') || '',
-            email: formData.email,
-            phone: formData.phone,
-            cell_phone: formData.phone,
+            name: (() => {
+              const fullName = pendingOrder?.shipping_full_name || formData.full_name || '';
+              const nameParts = fullName.split(' ').filter(part => part.trim() !== '');
+              return nameParts[0] || 'Usuario';
+            })(),
+            last_name: (() => {
+              const fullName = pendingOrder?.shipping_full_name || formData.full_name || '';
+              const nameParts = fullName.split(' ').filter(part => part.trim() !== '');
+              return nameParts.slice(1).join(' ') || 'Apellido';
+            })(),
+            email: pendingOrder?.shipping_email || formData.email || 'usuario@ejemplo.com',
+            phone: pendingOrder?.shipping_phone || formData.phone || '3000000000',
+            cell_phone: pendingOrder?.shipping_phone || formData.phone || '3000000000',
           },
           dues: '1', // Pago en una sola cuota
         }),
@@ -277,7 +381,7 @@ export default function CheckoutPage() {
         setError("Tu pago está pendiente de confirmación. Te notificaremos cuando se procese.");
         
         setTimeout(() => {
-          router.push(`/my-orders/${createdOrderId}`);
+          router.push(`/my-orders/${orderId}`);
         }, 2000);
       } else {
         // Otros errores
@@ -308,9 +412,22 @@ export default function CheckoutPage() {
     return acc;
   }, 0);
 
-  if (!user || cart.length === 0) {
-    return null;
+  // Mostrar modal de orden pendiente si existe (pero NO en el paso de pago y NO si ya decidió continuar)
+  if (pendingOrder && step !== 'payment' && !hasContinuedPendingOrder && !isExpired) {
+    return (
+      <PendingOrderModal
+        isOpen={true}
+        onClose={handleClosePendingOrderModal}
+        onCancelOrder={handleCancelPendingOrder}
+        onContinueOrder={handleContinuePendingOrder}
+        pendingOrder={pendingOrder}
+        timeRemaining={timeRemaining}
+        isExpired={isExpired}
+        isLoading={pendingOrderLoading}
+      />
+    );
   }
+
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -617,6 +734,23 @@ export default function CheckoutPage() {
                   </div>
                 </div>
 
+                {/* Advertencia */}
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                  <div className="flex items-start gap-3">
+                    <svg className="w-5 h-5 text-yellow-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                    <div>
+                      <h4 className="text-sm font-semibold text-yellow-800 mb-1">
+                        Importante
+                      </h4>
+                      <p className="text-sm text-yellow-700">
+                        Al continuar con el pago, no podrás modificar tu orden. Por favor revisa todos los detalles antes de proceder.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
                 {/* Resumen del pedido */}
                 <div>
                   <h3 className="font-semibold text-gray-900 mb-3">Resumen del pedido</h3>
@@ -766,6 +900,30 @@ export default function CheckoutPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4 pt-4">
+                {/* Timer de orden pendiente */}
+                {pendingOrder && (localTimeRemaining !== null || timeRemaining) && !isExpired && (
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                    <div className="flex items-center justify-center gap-2 mb-2">
+                      <Clock className="h-5 w-5 text-[#4a5a3f]" />
+                      <div className="text-2xl font-bold text-[#4a5a3f]">
+                        {Math.floor((localTimeRemaining || timeRemaining || 0) / 60000)}:{(Math.floor(((localTimeRemaining || timeRemaining || 0) % 60000) / 1000)).toString().padStart(2, '0')}
+                      </div>
+                    </div>
+                    <p className="text-sm text-[#4a5a3f] text-center">
+                      Tiempo restante para completar el pago
+                    </p>
+                    {/* Progress bar */}
+                    <div className="w-full bg-green-200 rounded-full h-2 mt-2">
+                      <div 
+                        className="bg-[#4a5a3f] h-2 rounded-full transition-all duration-1000 ease-linear"
+                        style={{ 
+                          width: `${Math.max(0, Math.min(100, ((localTimeRemaining || timeRemaining || 0) / (30 * 60 * 1000)) * 100))}%` 
+                        }}
+                      ></div>
+                    </div>
+                  </div>
+                )}
+
                 {/* Resumen compacto */}
                 <div className="bg-gray-50 rounded-lg p-3">
                   <div className="flex justify-between items-center">
@@ -779,7 +937,14 @@ export default function CheckoutPage() {
                 {/* Formulario de tarjeta */}
                 <CreditCardForm
                   onSubmit={handleCardSubmit}
-                  onCancel={() => setStep('review')}
+                  onCancel={() => {
+                    if (pendingOrder) {
+                      // Si hay una orden pendiente, volver a shipping para mostrar el modal
+                      setStep('shipping');
+                    } else {
+                      setStep('review');
+                    }
+                  }}
                   isProcessing={isProcessing}
                 />
 

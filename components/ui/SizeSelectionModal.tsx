@@ -21,6 +21,10 @@ export default function SizeSelectionModal({ isOpen, onClose, onSuccess, product
   const isProductInWishlist = product ? isInWishlist(product.id) : false;
 
   const getAvailableSizes = () => {
+    // Priorizar variantes sobre sizes
+    if (product?.variants && Array.isArray(product.variants)) {
+      return product.variants.map((variant: any) => variant.variant_value);
+    }
     if (product?.sizes && Array.isArray(product.sizes)) {
       return product.sizes;
     }
@@ -58,9 +62,14 @@ export default function SizeSelectionModal({ isOpen, onClose, onSuccess, product
       return;
     }
 
+    // Encontrar la variante correspondiente a la talla seleccionada
+    const selectedVariant = product?.variants?.find(
+      (variant: any) => variant.variant_value === selectedSize
+    );
+
     setIsLoading(true);
     try {
-      await toggleWishlist(product, selectedSize);
+      await toggleWishlist(product, selectedSize, selectedVariant?.id);
       onSuccess?.();
       onClose();
     } catch (error) {
