@@ -700,14 +700,17 @@ export default function AdminProducts() {
       variant_value: "",
       stock: 0
     });
+    const normalizedCategory = product.category?.toLowerCase() || "camiseta";
+    const normalizedGender = product.gender?.toLowerCase() || "unisex";
+    
     setFormData({
       name: product.name,
       price: product.price,
       images: product.images || [],
       main_image: product.main_image || "",
       image: product.main_image || product.image || "", 
-      category: product.category,
-      gender: product.gender,
+      category: normalizedCategory,
+      gender: normalizedGender,
       description: product.description || "",
       specifications: product.specifications || [],
       sizes: product.sizes || [], // Mantener para compatibilidad
@@ -1618,13 +1621,13 @@ export default function AdminProducts() {
                   }
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#4a5a3f] cursor-pointer"
                 >
-                  <option value="CAMISETA">Camiseta</option>
-                  <option value="SUDADERA">Sudadera</option>
-                  <option value="TOP">Top</option>
-                  <option value="JEAN">Jean</option>
-                  <option value="JOGGER">Jogger</option>
-                  <option value="GORRA">Gorra</option>
-                  <option value="ACCESORIO">Accesorio</option>
+                  <option value="camiseta">Camiseta</option>
+                  <option value="sudadera">Sudadera</option>
+                  <option value="top">Top</option>
+                  <option value="jean">Jean</option>
+                  <option value="jogger">Jogger</option>
+                  <option value="gorra">Gorra</option>
+                  <option value="accesorio">Accesorio</option>
                 </select>
               </div>
               <div>
@@ -1638,9 +1641,9 @@ export default function AdminProducts() {
                   }
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#4a5a3f] cursor-pointer"
                 >
-                  <option value="HOMBRE">Hombre</option>
-                  <option value="MUJER">Mujer</option>
-                  <option value="UNISEX">Unisex</option>
+                  <option value="hombre">Hombre</option>
+                  <option value="mujer">Mujer</option>
+                  <option value="unisex">Unisex</option>
                 </select>
               </div>
               <div>
