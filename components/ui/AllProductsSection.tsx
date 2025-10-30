@@ -186,13 +186,13 @@ export default function AllProductsSection() {
                     onClick={() => handleProductClick(product)}
                   >
                     <div className="relative mb-4">
-                      <div className="dib relative hoverEffect w-full h-80 overflow-hidden">
+                      <div className="dib relative hoverEffect w-full h-64 sm:h-80 overflow-hidden">
                         <Image
                           src={product.image || "/placeholder.svg"}
                           alt={product.name}
-                          width={500}
-                          height={748}
-                          className="w-full h-full object-cover transition-opacity duration-300 group-hover:opacity-0"
+                          fill
+                          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+                          className="w-full h-full object-contain sm:object-cover transition-opacity duration-300 group-hover:opacity-0 bg-white"
                         />
                         <Image
                           src={
@@ -201,9 +201,9 @@ export default function AllProductsSection() {
                             "/placeholder.svg"
                           }
                           alt={product.name}
-                          width={500}
-                          height={748}
-                          className="w-full h-full absolute top-0 left-0 z-10 object-cover opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                          fill
+                          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+                          className="w-full h-full absolute top-0 left-0 z-10 object-contain sm:object-cover opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-white"
                         />
                       </div>
                       
