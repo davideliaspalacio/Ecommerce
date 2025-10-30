@@ -183,11 +183,15 @@ export default function Header() {
                 }`}></span>
               </Link>
               <Link
-                href="#"
-                className="text-gray-700 hover:text-[#4a5a3f] transition-colors font-medium text-sm relative group"
+                href="/collections"
+                className={`text-gray-700 hover:text-[#4a5a3f] transition-colors font-medium text-sm relative group ${
+                  pathname === "/collections" ? "text-[#4a5a3f]" : ""
+                }`}
               >
                 Colecciones
-                <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-[#4a5a3f] transition-all duration-300 group-hover:w-full"></span>
+                <span className={`absolute -bottom-1 left-0 h-0.5 bg-[#4a5a3f] transition-all duration-300 ${
+                  pathname === "/collections" ? "w-full" : "w-0 group-hover:w-full"
+                }`}></span>
               </Link>
               <Link
                 href="#"
@@ -376,7 +380,7 @@ export default function Header() {
                     </Link>
                     
                     <Link
-                      href="#"
+                      href="/collections"
                       className="flex items-center gap-3 px-3 py-2 text-gray-700 hover:text-[#4a5a3f] hover:bg-gray-50 transition-colors rounded-1xl font-medium"
                       onClick={toggleMobileMenu}
                     >

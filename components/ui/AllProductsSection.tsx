@@ -14,7 +14,7 @@ import SizeSelectionModal from "./SizeSelectionModal";
 import ConfirmModal from "./ConfirmModal";
 
 export default function AllProductsSection() {
-  const { selectedProduct, setSelectedProduct, setSelectedSize, setCurrentImageIndex, openAuthModal } = useUIStore();
+  const { selectedProduct, setSelectedProduct, setSelectedSize, setCurrentImageIndex, openAuthModal, genderFilter, setGenderFilter } = useUIStore();
   const { products, loading, error, hasMore, loadMore, totalCount } = useProductsPagination(8);
   const { openProductFromUrl, generateProductUrl } = useProductUrl();
   const { isInWishlist, toggleWishlist, isLoading } = useWishlistStore();
@@ -103,6 +103,11 @@ export default function AllProductsSection() {
     setProductToRemove(null);
   };
 
+  const genderFilteredProducts = products.filter((product) => {
+    if (genderFilter === "TODOS") return true;
+    return product.gender === genderFilter || product.gender === "unisex";
+  });
+
   return (
     <>
       <section className={`py-16 bg-gray-50 mt-20 transition-all duration-1000 ease-out ${
@@ -117,8 +122,36 @@ export default function AllProductsSection() {
               : 'opacity-0 translate-y-8'
           }`}>
             <h3 className="text-3xl font-bold">TODOS LOS PRODUCTOS</h3>
-            <div className="text-sm text-gray-600">
-              {totalCount > 0 && `${totalCount} productos disponibles`}
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setGenderFilter("TODOS")}
+                  className={`px-3 py-1.5 text-xs rounded-md border transition-colors cursor-pointer ${
+                    genderFilter === "TODOS" ? "bg-[#4a5a3f] text-white border-[#4a5a3f]" : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+                  }`}
+                >
+                  Unisex
+                </button>
+                <button
+                  onClick={() => setGenderFilter("hombre")}
+                  className={`px-3 py-1.5 text-xs rounded-md border transition-colors cursor-pointer ${
+                    genderFilter === "hombre" ? "bg-[#4a5a3f] text-white border-[#4a5a3f]" : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+                  }`}
+                >
+                  Hombre
+                </button>
+                <button
+                  onClick={() => setGenderFilter("mujer")}
+                  className={`px-3 py-1.5 text-xs rounded-md border transition-colors cursor-pointer ${
+                    genderFilter === "mujer" ? "bg-[#4a5a3f] text-white border-[#4a5a3f]" : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+                  }`}
+                >
+                  Mujer
+                </button>
+              </div>
+              <div className="text-sm text-gray-600 hidden sm:block">
+                {`${genderFilteredProducts.length} productos disponibles`}
+              </div>
             </div>
           </div>
           
@@ -135,7 +168,7 @@ export default function AllProductsSection() {
                   ? 'opacity-100 translate-y-0' 
                   : 'opacity-0 translate-y-12'
               }`}>
-                {products
+                {genderFilteredProducts
                   .filter((product, index, self) => 
                     index === self.findIndex(p => p.id === product.id)
                   )
