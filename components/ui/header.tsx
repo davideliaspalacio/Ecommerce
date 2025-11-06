@@ -170,19 +170,6 @@ export default function Header() {
                 }`}></span>
               </Link>
               <Link
-                href="/my-orders"
-                className={`transition-colors font-medium text-sm relative group ${
-                  pathname === "/my-orders" 
-                    ? "text-[#4a5a3f]" 
-                    : "text-gray-700 hover:text-[#4a5a3f]"
-                }`}
-              >
-                Mis Órdenes
-                <span className={`absolute -bottom-1 left-0 h-0.5 bg-[#4a5a3f] transition-all duration-300 ${
-                  pathname === "/my-orders" ? "w-full" : "w-0 group-hover:w-full"
-                }`}></span>
-              </Link>
-              <Link
                 href="/collections"
                 className={`text-gray-700 hover:text-[#4a5a3f] transition-colors font-medium text-sm relative group ${
                   pathname === "/collections" ? "text-[#4a5a3f]" : ""
@@ -406,22 +393,6 @@ export default function Header() {
                 {user && (
                   <div className="px-2 py-2 border-t border-gray-100">
                     <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Mi Cuenta</h3>
-                    <div className="space-y-1">
-                      <Link
-                        href="/my-orders"
-                        className={`flex items-center gap-3 px-3 py-2 hover:bg-gray-50 transition-colors rounded-1xl font-medium ${
-                          pathname === "/my-orders" 
-                            ? "text-[#4a5a3f] bg-green-50" 
-                            : "text-gray-700 hover:text-[#4a5a3f]"
-                        }`}
-                        onClick={toggleMobileMenu}
-                      >
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-                        </svg>
-                        <span>Mis Órdenes</span>
-                      </Link>
-                    </div>
                   </div>
                 )}
                 <div className="px-2 py-2 border-t border-gray-100">

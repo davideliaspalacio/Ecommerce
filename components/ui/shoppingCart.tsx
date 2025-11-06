@@ -40,7 +40,10 @@ export default function ShoppingCart() {
   };
 
   // Ya no necesitamos fetchCartTotal, el total viene en el carrito
-
+  const handleWhatsappPayment = () => {
+    const whatsappUrl = `https://wa.me/573182600115?text=¡Hola! Me interesa conocer más sobre los productos de ENOUGHH®. ¿Podrían ayudarme?`;
+    window.open(whatsappUrl, '_blank');
+  };
   const handleCheckoutClick = () => {
     if (!user) {
       openAuthModal();
@@ -259,7 +262,7 @@ export default function ShoppingCart() {
               </div>
 
               <button
-                onClick={handleCheckoutClick}
+                onClick={handleWhatsappPayment}
                 className={`w-full cursor-pointer transition-all duration-300 ${
                   user 
                     ? 'bg-[#4a5a3f] hover:bg-[#3d4a34] text-white shadow-lg hover:shadow-xl transform hover:scale-[1.02]' 
@@ -269,20 +272,9 @@ export default function ShoppingCart() {
               >
                 {user ? (
                   <>
-                    <span>Proceder al pago</span>
-                    <svg
-                      className="w-5 h-5"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M13 7l5 5m0 0l-5 5m5-5H6"
-                      />
-                    </svg>
+                    <button onClick={handleWhatsappPayment}>
+                      <span>Proceder al pago en whatsapp</span>
+                    </button>
                   </>
                 ) : (
                   <span className="font-medium">Iniciar sesión para pagar</span>

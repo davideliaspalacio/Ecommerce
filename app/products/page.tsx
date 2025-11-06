@@ -6,7 +6,6 @@ import ShoppingCart from "@/components/ui/shoppingCart"
 import Header from "@/components/ui/header"
 import FooterSection from "@/components/ui/footerSection"
 
-// Componente de loading para el Suspense
 function ProductsLoading() {
   return (
     <section className="py-16 bg-white">
