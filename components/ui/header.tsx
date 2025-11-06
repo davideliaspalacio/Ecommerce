@@ -135,7 +135,6 @@ export default function Header() {
               </svg>
             </button>
             <Link href="/" className="absolute left-1/2 -translate-x-1/2 group flex items-center gap-2">
-               <img src="/favicon.png" alt="ENOUGHH" className="w-8 h-8 md:w-10 md:h-10 animate-bounce" />
                <h1 className="text-xl md:text-2xl font-bold tracking-wider text-gray-900 group-hover:text-[#4a5a3f] transition-colors duration-300">
                  ENOUGHH
                </h1>
@@ -168,23 +167,6 @@ export default function Header() {
                 <span className={`absolute -bottom-1 left-0 h-0.5 bg-[#4a5a3f] transition-all duration-300 ${
                   pathname === "/products" ? "w-full" : "w-0 group-hover:w-full"
                 }`}></span>
-              </Link>
-              <Link
-                href="/collections"
-                className={`text-gray-700 hover:text-[#4a5a3f] transition-colors font-medium text-sm relative group ${
-                  pathname === "/collections" ? "text-[#4a5a3f]" : ""
-                }`}
-              >
-                Colecciones
-                <span className={`absolute -bottom-1 left-0 h-0.5 bg-[#4a5a3f] transition-all duration-300 ${
-                  pathname === "/collections" ? "w-full" : "w-0 group-hover:w-full"
-                }`}></span>
-              </Link>
-              <Link
-                href="#"
-                className="text-gray-700 hover:text-[#4a5a3f] transition-colors font-medium text-sm relative group"
-              >
-                Sobre Nosotros
               </Link>
             </nav>
 
@@ -375,17 +357,6 @@ export default function Header() {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
                       </svg>
                       <span>Colecciones</span>
-                    </Link>
-                    
-                    <Link
-                      href="#"
-                      className="flex items-center gap-3 px-3 py-2 text-gray-700 hover:text-[#4a5a3f] hover:bg-gray-50 transition-colors rounded-1xl font-medium"
-                      onClick={toggleMobileMenu}
-                    >
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                      <span>Sobre Nosotros</span>
                     </Link>
                   </div>
                 </div>
